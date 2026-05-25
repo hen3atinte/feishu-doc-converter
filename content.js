@@ -2,7 +2,7 @@
 // 飞书文档转换器 - Content Script (v2.9)
 // 功能：富文本渲染、多路径API、跨页引用解析、全块类型支持
 // v2.4-2.8 修复历史见 CHANGELOG
-// v2.9 新增：URL全局清洗(sanitizeUrl, 阻止javascript:/data:等危险协议)、P0×5修复(代码块内容保护/depth 4→8/表格内联代码保护/getPlainText扩展/跨子树循环检测)、P1 URL安全(9个块类型统一清洗)
+// v2.9 新增：URL全局清洗(sanitizeUrl, 阻止javascript:/data:等危险协议)、P0×5修复(代码块保护/depth 4→8/表格内联代码保护/getPlainText扩展/跨子树循环检测)、P1 URL安全(9个块类型统一清洗)、P0鲁棒性(消息超时/block上限/空数据检测/占位冲突)
 // ============================================================
 
 (function () {
@@ -142,8 +142,6 @@
         }
 
         // 文字颜色（非默认颜色时添加 emoji 标注）
-        // 飞书字段：style.foreColor / style.textColor / style.color（不同版本 API 字段名不一致）
-        // ⚠️ 不剥离 background_ 前缀：若飞书错将背景色值写入文字颜色字段，不应误标为文字颜色
         const rawFg = (style.foreColor || style.textColor || style.color || '').toLowerCase();
         const fgColor = rawFg.startsWith('background_') ? '' : rawFg.replace(/ /g, '_');
         if (fgColor && fgColor !== 'default' && fgColor !== 'black' && FEISHU_COLORS[fgColor]) {
@@ -151,11 +149,10 @@
         }
 
         // 背景高亮
-        // 飞书字段：style.backColor / style.backgroundColor / style.bgColor
         const bgColor = (style.backColor || style.backgroundColor || style.bgColor || '').toLowerCase().replace(/ /g, '_');
         const bgKey = bgColor ? bgColor + '_bg' : '';
         if (bgKey && FEISHU_COLORS[bgKey]) {
-          text = `==${text}==`; // Markdown highlight（部分渲染器支持）
+          text = `==${text}==`;
         }
 
         return text;
@@ -191,7 +188,6 @@
       // Emoji
       case 'emoji': {
         const emojiId = el.emoji?.emojiId || el.emojiId || '';
-        // 飞书自定义 emoji 用 :name: 格式
         if (emojiId) {
           return `:${emojiId}:`;
         }
@@ -229,35 +225,22 @@
 
   // ---- 文档 URL 解析 ----
 
-  /**
-   * 从页面 URL 解析文档信息
-   * 支持：wiki（知识空间）、docx（新版文档）、docs（旧版文档）、
-   *       mindnotes（思维导图）、sheets（表格）、space（空间）
-   */
   function parseDocUrl() {
     const url = window.location.href;
     const host = window.location.host;
 
-    // 确认是飞书域名
     const isFeishu = /\.feishu\.cn$/.test(host) || /\.larksuite\.com$/.test(host);
     if (!isFeishu) {
       return { type: 'unknown', token: null, host: null, error: '非飞书页面' };
     }
 
     const patterns = [
-      // 知识空间文档 /wiki/TOKEN
       { regex: /\/wiki\/([A-Za-z0-9_-]+)/, type: 'wiki' },
-      // 新版文档 /docx/TOKEN
       { regex: /\/docx\/([A-Za-z0-9_-]+)/, type: 'docx' },
-      // 旧版文档 /docs/TOKEN
       { regex: /\/docs\/([A-Za-z0-9_-]+)/, type: 'docs' },
-      // 思维导图 /mindnotes/TOKEN
       { regex: /\/mindnotes\/([A-Za-z0-9_-]+)/, type: 'mindnote' },
-      // 表格 /sheets/TOKEN
       { regex: /\/sheets\/([A-Za-z0-9_-]+)/, type: 'sheet' },
-      // 空间页面 /space/TOKEN
       { regex: /\/space\/([A-Za-z0-9_-]+)/, type: 'space' },
-      // Bitable /base/TOKEN
       { regex: /\/base\/([A-Za-z0-9_-]+)/, type: 'bitable' },
     ];
 
@@ -271,13 +254,9 @@
     return { type: 'unknown', token: null, host, error: '无法识别文档类型' };
   }
 
-  /**
-   * 根据文档类型确定 API 端点
-   */
   function getApiEndpoint(docInfo) {
     const base = `https://${docInfo.host}`;
 
-    // wiki 和 space 类型用 /space/api/
     if (docInfo.type === 'wiki' || docInfo.type === 'space') {
       return {
         url: `${base}/space/api/docx/pages/client_vars`,
@@ -285,7 +264,6 @@
       };
     }
 
-    // docx 类型 — 使用已验证的 space API（/docx-api/ 端点未验证）
     if (docInfo.type === 'docx') {
       return {
         url: `${base}/space/api/docx/pages/client_vars`,
@@ -293,12 +271,10 @@
       };
     }
 
-    // 其他类型可能不支持此 API，返回 null 由调用方处理
     if (docInfo.type === 'mindnote' || docInfo.type === 'sheet' || docInfo.type === 'bitable') {
       return { url: null, error: `${docInfo.type} 类型暂不支持 API 解析` };
     }
 
-    // 兜底：尝试 space API
     return {
       url: `${base}/space/api/docx/pages/client_vars`,
       needsTypeParam: false,
@@ -309,7 +285,6 @@
 
   const BlockParser = {
 
-    // --- 标题 ---
     heading1(block) {
       const t = renderRichText(block.data);
       return t ? `\n# ${t}\n` : '';
@@ -335,13 +310,11 @@
       return t ? `\n###### ${t}\n` : '';
     },
 
-    // --- 正文 ---
     text(block) {
       const t = renderRichText(block.data);
       return t ? `${t}\n` : '';
     },
 
-    // --- 列表 ---
     bullet(block, ctx) {
       const t = renderRichText(block.data);
       const indent = '  '.repeat(Math.min(ctx.depth, 8));
@@ -350,7 +323,6 @@
     ordered(block, ctx) {
       const t = renderRichText(block.data);
       if (!t) return '';
-      // 支持飞书 ordered 块的自定义 start 属性（默认 1）
       const start = block.data?.ordered?.start || 1;
       if (!(ctx.depth in ctx.counter)) ctx.counter[ctx.depth] = (start > 0 ? start : 1) - 1;
       ctx.counter[ctx.depth]++;
@@ -358,31 +330,25 @@
       return `${indent}${ctx.counter[ctx.depth]}. ${t}\n`;
     },
 
-    // --- 代码块 ---
     code(block) {
       const code = getPlainText(block.data) || '';
-      // 语言别名标准化（使用模块级常量 LANG_ALIAS）
       const langRaw = (block.data?.code?.style?.language || block.data?.code?.language || block.data?.style?.language || '').toLowerCase();
       const lang = LANG_ALIAS[langRaw] || langRaw;
       if (!code.trim()) return '';
       return `\n\`\`\`${lang}\n${code}\n\`\`\`\n`;
     },
 
-    // --- 引用 ---
     quote(block) {
       const t = renderRichText(block.data);
       if (!t) return '';
-      // 保留多行：每行均加 '> ' 前缀，空行用 '>' 占位保持引用块连续性
       const lines = t.split('\n').map(l => l ? `> ${l}` : '>').join('\n');
       return `\n${lines}\n`;
     },
 
-    // --- 高亮块/Callout ---
     callout(block) {
       const t = renderRichText(block.data);
       const color = block.data?.callout?.color || '';
       const emoji = block.data?.callout?.emoji || '';
-      // 避免 emoji/label 为空时多余空格
       const parts = [];
       if (emoji) parts.push(emoji);
       if (color) parts.push(`[${color.toUpperCase()}]`);
@@ -390,27 +356,22 @@
       return t ? `\n> ${header}\n${t.split('\n').map(l => l ? `> ${l}` : '>').join('\n')}\n` : '';
     },
 
-    // --- 分割线 ---
     divider() {
       return '\n---\n';
     },
 
-    // --- 表格 ---
     table(block, ctx) {
       if (ctx.options?.tables === false) {
-        // 用户关闭了表格渲染 → 输出简短摘要
         return '\n[表格已省略]\n';
       }
       const bm = ctx.blockMap;
       const children = block.data?.children || [];
       if (children.length === 0) return '';
 
-      // 读取表头行数（header_row 可为布尔或数字，默认 1）
       const headerRowProp = block.data?.table?.header_row ?? block.data?.header_row ?? true;
       let headerRows = 0;
       if (headerRowProp === true) headerRows = 1;
       else if (typeof headerRowProp === 'number') headerRows = headerRowProp;
-      // false/0 表示无表头
 
       const rows = [];
 
@@ -425,13 +386,9 @@
             const cellBlock = bm[cellId];
             if (!cellBlock) { cells.push(''); continue; }
 
-            // 单元格内容解析策略：
-            // 1. 优先用 renderRichText 处理单元格自身的 attributedTexts（行内富文本）
-            // 2. 若单元格有子 block（如嵌入代码块、图片），单独递归，不与 renderRichText 叠加
             const cellChildren = cellBlock.data?.children || [];
             let inner = '';
             if (cellChildren.length > 0) {
-              // 有子块 → 只递归子块，不再 renderRichText（避免双重解析）
               const parts = [];
               for (const ccId of cellChildren) {
                 const cc = bm[ccId];
@@ -442,12 +399,9 @@
               }
               inner = parts.filter(Boolean).join(' ');
             } else {
-              // 无子块 → 直接解析单元格自身的富文本
               inner = renderRichText(cellBlock.data);
             }
 
-            // 转义 Markdown 表格中可能破坏结构的特殊字符
-            // 保护行内代码：反引号包裹的片段不应被转义
             const codeParts = [];
             let escaped = inner.replace(/`[^`]*`/g, (m) => {
               codeParts.push(m);
@@ -474,12 +428,10 @@
       let md = '\n';
       const colCount = Math.max(...rows.map(r => r.length), 1);
 
-      // 补齐每行列数
       for (const row of rows) {
         while (row.length < colCount) row.push('');
       }
 
-      // 输出所有行，表头行后插入分隔符
       for (let i = 0; i < rows.length; i++) {
         md += '| ' + rows[i].join(' | ') + ' |\n';
         if (i === headerRows - 1 && headerRows > 0 && headerRows < rows.length) {
@@ -490,7 +442,6 @@
       return md + '\n';
     },
 
-    // --- 图片 ---
     image(block, ctx) {
       const rawSrc = block.data?.image?.source_url ||
                   block.data?.file?.source_url || '';
@@ -501,30 +452,25 @@
         return `\n[图片: ${alt}]\n`;
       }
       if (ctx.imageUrls) {
-        // 图片下载使用原始 URL，保证飞书 CDN 链接可访问
         ctx.imageUrls.push({ url: rawSrc, alt });
       }
       return `\n![${alt}](${src})\n`;
     },
 
-    // --- 待办 ---
     todo(block) {
       const t = renderRichText(block.data);
       const done = block.data?.todo?.done || false;
       const assignee = block.data?.todo?.assignee?.name || '';
       const extra = assignee ? ` *(负责人: @${assignee})*` : '';
-      // 即使内容为空也保留 checkbox 状态（飞书支持空白待办项）
       return `- [${done ? 'x' : ' '}] ${t || '待办事项'}${extra}\n`;
     },
 
-    // --- 链接卡片 ---
     link_card(block) {
       const rawUrl = block.data?.link_card?.url || block.data?.link?.url || '';
       const url = sanitizeUrl(rawUrl);
       const title = block.data?.link_card?.title || renderRichText(block.data) || rawUrl;
       const desc = block.data?.link_card?.description || '';
       const thumb = sanitizeUrl(block.data?.link_card?.thumbnail || '');
-      // 无有效 url 时输出纯文本信息，不丢失标题
       if (url === '#') return title ? `\n> 🔗 ${title}\n` : '';
       let md = `\n> **🔗 [${title}](${url})**\n`;
       if (desc) md += `> ${desc}\n`;
@@ -532,21 +478,18 @@
       return md + '\n';
     },
 
-    // --- 文件/附件 ---
     file(block) {
       const name = block.data?.file?.name || renderRichText(block.data) || '附件';
       const url = sanitizeUrl(block.data?.file?.url || block.data?.file?.source_url || '');
       return url !== '#' ? `\n📎 [${name}](${url})\n` : `\n📎 ${name}\n`;
     },
 
-    // --- 多维表格/Bitable ---
     bitable(block) {
       const title = renderRichText(block.data) || '多维表格';
       const url = sanitizeUrl(block.data?.bitable?.url || '');
       return url !== '#' ? `\n> 📊 **多维表格**: [${title}](${url})\n` : `\n> 📊 **多维表格**: ${title}\n`;
     },
 
-    // --- 图片组/Gallery ---
     gallery(block, ctx) {
       const children = block.data?.children || [];
       if (children.length === 0) return '';
@@ -562,12 +505,10 @@
           }
         }
       }
-      // 无有效图片时不输出空容器
       if (!images.trim()) return '';
       return '\n<div class="gallery">\n\n' + images + '</div>\n\n';
     },
 
-    // --- 任务 ---
     task(block) {
       const t = renderRichText(block.data) || '任务';
       const rawAssignees = block.data?.task?.assignees;
@@ -582,7 +523,6 @@
       return `\n> ✅ **任务**: ${t}${meta}\n`;
     },
 
-    // --- 流程图/Diagram ---
     diagram(block) {
       const title = renderRichText(block.data) || '流程图';
       const url = sanitizeUrl(block.data?.diagram?.url || '');
@@ -591,7 +531,6 @@
         : `\n> 🗺 **流程图**: ${title}（需在飞书中查看）\n`;
     },
 
-    // --- 思维导图 ---
     mindnote(block) {
       const title = renderRichText(block.data) || '思维导图';
       const url = sanitizeUrl(block.data?.mindnote?.url || '');
@@ -600,13 +539,11 @@
         : `\n> 🧠 **思维导图**: ${title}（需在飞书中查看）\n`;
     },
 
-    // --- 公式块 ---
     equation(block) {
       const eq = block.data?.equation?.equation || '';
       return eq ? `\n$$\n${eq}\n$$\n` : '';
     },
 
-    // --- 页面引用 ---
     page(block) {
       const title = block.data?.page?.title || renderRichText(block.data) || '';
       const url = sanitizeUrl(block.data?.page?.url || '');
@@ -616,7 +553,6 @@
         : `\n> 📄 **页面引用**: ${title}\n`;
     },
 
-    // --- 嵌入网页/iframe ---
     iframe(block) {
       const url = sanitizeUrl(block.data?.iframe?.url || block.data?.embed?.url || '');
       const title = renderRichText(block.data) || '嵌入内容';
@@ -625,13 +561,11 @@
         : `\n> 🌐 **嵌入**: ${title}（需在飞书中查看）\n`;
     },
 
-    // --- 聊天卡片 ---
     chat_card(block) {
       const title = renderRichText(block.data) || '聊天卡片';
       return `\n> 💬 **聊天卡片**: ${title}（需在飞书中查看）\n`;
     },
 
-    // --- 分栏 ---
     grid(block, ctx) {
       const children = block.data?.children || [];
       if (children.length === 0) return '';
@@ -639,31 +573,26 @@
       for (const cid of children) {
         const cb = ctx.blockMap[cid];
         if (cb) {
-          // 每列使用独立 counter 对象，避免列间有序列表编号互相干扰
           const colResult = processBlock(cid, ctx.blockMap, ctx.options, ctx.imageUrls, ctx.depth + 1, {});
           if (colResult.trim()) {
             innerContent += '<div class="column">\n\n' + colResult + '\n</div>\n\n';
           }
         }
       }
-      // 所有列均为空时不输出空容器
       if (!innerContent.trim()) return '';
       return '\n<div class="grid">\n\n' + innerContent + '</div>\n\n';
     },
 
-    // --- 附件（旧格式） ---
     attachment(block) {
       const name = block.data?.attachment?.name || '附件';
       const url = sanitizeUrl(block.data?.attachment?.url || '');
       return url !== '#' ? `\n📎 [${name}](${url})\n` : `\n📎 ${name}\n`;
     },
 
-    // --- 兜底 ---
     _default(block) {
       const t = renderRichText(block.data);
       const type = block.data?.type || 'unknown';
       if (t) return `${t}\n`;
-      // 有 children 的未知块，不输出占位（由递归处理 children）
       const hasChildren = block.data?.children && block.data.children.length > 0;
       return hasChildren ? '' : `\n<!-- 不支持的类型: ${type} -->\n`;
     },
@@ -671,21 +600,15 @@
 
   // ---- 核心转换引擎 ----
 
-  /**
-   * 处理单个 block，递归处理子节点。
-   * prevSiblingType: 前一个兄弟 block 的类型，用于检测有序列表边界。
-   */
   function processBlock(blockId, blockMap, options, imageUrls, depth = 0, counter = {}, prevSiblingType = null, path = new Set()) {
     const block = blockMap[blockId];
     if (!block) return '';
 
-    // 循环引用检测：当前 block 已在递归路径中 → 跳过防止栈溢出
     if (path.has(blockId)) return '';
     path.add(blockId);
 
     const type = block.data?.type || 'text';
 
-    // 有序列表边界检测：当前 block 是 ordered 但前一个兄弟不是 ordered → 新列表开始
     if (type === 'ordered' && prevSiblingType !== 'ordered') {
       delete counter[depth];
     }
@@ -697,7 +620,6 @@
     const parser = BlockParser[type] || BlockParser._default;
     result += parser(block, ctx);
 
-    // 递归处理子节点（table/gallery/grid 自行处理 children，跳过）
     const selfChildren = ['table', 'gallery', 'grid'];
     if (!selfChildren.includes(type)) {
       const children = block.data?.children || [];
@@ -714,9 +636,6 @@
     return result;
   }
 
-  /**
-   * 收集所有待解析的子 Block ID（跨页引用检测）
-   */
   function collectUnresolvedRefs(blockMap) {
     const unresolved = new Set();
     for (const [id, block] of Object.entries(blockMap)) {
@@ -730,45 +649,32 @@
     return unresolved;
   }
 
-  /**
-   * 安全文件名清洗：移除路径穿越字符、控制字符、HTML敏感字符
-   * 保留：中英文、数字、空格、常用标点（.,-_()[]）
-   */
   function sanitizeFilename(name) {
     if (!name) return '';
     return name
-      .replace(/[\\/:*?"<>|]/g, '_')   // 文件系统非法字符
-      .replace(/[\x00-\x1f\x7f]/g, '') // 控制字符
-      .replace(/\.\./g, '_')           // 路径穿越
-      .replace(/^\.+/, '_')            // 开头点号（隐藏文件）
+      .replace(/[\\/:*?"<>|]/g, '_')
+      .replace(/[\x00-\x1f\x7f]/g, '')
+      .replace(/\.\./g, '_')
+      .replace(/^\.+/, '_')
       .trim()
-      .substring(0, 200);              // 最大长度限制
+      .substring(0, 200);
   }
 
-  /**
-   * 安全 URL 清洗：阻止 dangerous protocols，防止 XSS 注入
-   * 白名单：http/https/ftp/mailto，data:image/*，相对路径/锚点
-   * 用于 Markdown 链接和图片引用（后续 HTML 渲染时仍需二次校验）
-   */
   function sanitizeUrl(rawUrl) {
     if (!rawUrl || typeof rawUrl !== 'string') return '#';
     const url = rawUrl.trim();
     if (!url) return '#';
 
-    // 相对路径或锚点：安全
     if (/^[#\/]/.test(url)) return url;
 
-    // data URI：仅允许安全图片类型
     if (/^data:image\/(png|jpeg|gif|webp|bmp|tiff);/i.test(url)) return url;
 
-    // 提取协议
     const m = url.match(/^([a-zA-Z][a-zA-Z0-9+\-.]*):/);
     if (m) {
       const protocol = m[1].toLowerCase();
       const allowed = ['http', 'https', 'ftp', 'mailto'];
-      if (!allowed.includes(protocol)) return '#'; // 危险协议 → 无害锚点
+      if (!allowed.includes(protocol)) return '#';
     }
-    // 无协议则为相对路径或裸域名，安全
     return url;
   }
 
@@ -786,14 +692,14 @@
       throw new Error(endpoint.error);
     }
 
-    // 合并所有页面的 block_map
     const mergedBlockMap = {};
     const mergedBlockSeq = [];
-    const seqIds = new Set(); // O(1) 去重（替代 Array.includes O(n)）
+    const seqIds = new Set();
 
     let pageNum = 1;
     let cursor = '';
-    const maxPages = 20; // 安全上限
+    const maxPages = 20;
+    const MAX_BLOCKS = 5000;
     let firstTitle = '';
     let truncated = false;
 
@@ -805,7 +711,7 @@
       if (cursor) url.searchParams.set('cursor', cursor);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s 超时
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
       let resp;
       try {
@@ -829,7 +735,6 @@
         throw new Error(`API 请求失败 (${resp.status}): ${resp.statusText}`);
       }
 
-      // 检查 Content-Type 防止非 JSON 响应拖垮解析
       const contentType = resp.headers.get('content-type') || '';
       if (!contentType.includes('application/json')) {
         const preview = await resp.text().catch(() => '');
@@ -847,15 +752,27 @@
         throw new Error(`飞书 API 错误 (code=${json.code}): ${json.msg || '未知错误'}`);
       }
 
-      // 提取页面数据
       const pageData = json.data?.page || json.data;
-      const blockMap = pageData?.block_map || {};
-      const blockSeq = pageData?.block_sequence || [];
 
-      // 合并 block_map
+      if (!pageData || (Object.keys(pageData).length === 0)) {
+        if (pageNum === 1) {
+          throw new Error('文档数据为空：飞书 API 返回成功 code 但无页面内容，请确认文档是否有效或权限是否正确');
+        }
+        console.warn(`[飞书转换器] 第 ${pageNum} 页数据为空，跳过`);
+        break;
+      }
+
+      const blockMap = pageData.block_map || {};
+      const blockSeq = pageData.block_sequence || [];
+
       Object.assign(mergedBlockMap, blockMap);
 
-      // 追加 block_sequence（O(1) 去重：Set + 顺序数组）
+      if (Object.keys(mergedBlockMap).length > MAX_BLOCKS) {
+        truncated = true;
+        console.warn(`[飞书转换器] block 数量超过安全上限 (${MAX_BLOCKS})，已截断。建议分拆文档。`);
+        break;
+      }
+
       for (const id of blockSeq) {
         if (!seqIds.has(id)) {
           seqIds.add(id);
@@ -863,19 +780,16 @@
         }
       }
 
-      // 提取标题
       if (!firstTitle && pageData?.title) {
         firstTitle = pageData.title;
       }
 
-      // 检查分页
       const hasMore = pageData?.has_more === true || pageData?.hasMore === true;
       const nextCursor = pageData?.next_cursor || pageData?.nextCursor ||
                          (pageData?.cursors && pageData.cursors[0]) || '';
 
       if (!hasMore || !nextCursor) break;
 
-      // 超限截断检测：当前已处理完 maxPages 页，但还有下一页 → 标记截断
       if (pageNum >= maxPages) {
         truncated = true;
         break;
@@ -884,19 +798,14 @@
       cursor = nextCursor;
       pageNum++;
 
-      // 每次请求间隔 200ms 防止触发飞书 API 速率限制
-      // 最大 20 页 = 最多额外 4 秒延迟，对用户体验影响极小
       await new Promise(r => setTimeout(r, 200));
     }
 
-    // ---- 跨页引用解析：扫描未解析的子 Block ----
-    // 注意：当前实现中，飞书 API 的 block_map 在同文档内应是完整的。
-    // 仅需单次扫描：找出 blockMap 中被引用但不存在的 ID，插入占位文本。
-    // （多次循环无意义：第一次已将所有缺失 ID 填为占位，后续 unresolved.size 永远为 0）
     const unresolved = collectUnresolvedRefs(mergedBlockMap);
     let unresolvedCount = unresolved.size;
     if (unresolved.size > 0) {
       for (const uid of unresolved) {
+        if (mergedBlockMap[uid]) continue;
         mergedBlockMap[uid] = {
           data: {
             type: 'text',
@@ -908,11 +817,10 @@
       }
     }
 
-    // ---- 构建 Markdown ----
     let allLines = [];
     const imageUrls = [];
     const seen = new Set();
-    const sharedPath = new Set(); // 跨子树循环引用检测
+    const sharedPath = new Set();
 
     let prevSiblingType = null;
     for (const blockId of mergedBlockSeq) {
@@ -927,10 +835,8 @@
       prevSiblingType = blockType;
     }
 
-    // 清理输出
     let markdown = allLines.join('');
 
-    // 保护代码块：暂存 ```...``` 块，避免清理正则破坏代码内容
     const codeBlocks = [];
     markdown = markdown.replace(/```[\s\S]*?```/g, (match) => {
       codeBlocks.push(match);
@@ -940,7 +846,6 @@
     markdown = markdown.replace(/\n{3,}/g, '\n\n');
     markdown = markdown.replace(/\n{2,}---\n{2,}/g, '\n\n---\n\n');
 
-    // 恢复代码块
     markdown = markdown.replace(/__CODEBLOCK_(\d+)__/g, (_, i) => codeBlocks[parseInt(i)]);
 
     markdown = markdown.trim();
@@ -1030,7 +935,6 @@
         URL.revokeObjectURL(url);
 
         statusEl.style.color = '#2E7D32';
-        // 使用 textContent 避免 XSS（API 返回的 title 可能含恶意字符）
         const statusLines = [
           `✅ 转换完成！`,
           `标题: ${result.title}`,
@@ -1057,7 +961,6 @@
       }
     });
 
-    // 鼠标悬停效果
     btn.addEventListener('mouseenter', () => {
       btn.style.transform = 'scale(1.05)';
       btn.style.boxShadow = '0 6px 16px rgba(74,108,247,0.5)';
@@ -1091,20 +994,32 @@
         debug: request.options?.debug === true,
       };
 
-      convertDoc(opts).then(result => {
-        sendResponse({
-          markdown: result.markdown,
-          title: result.title,
-          imageUrls: result.imageUrls,
-          pages: result.pages,
-          unresolvedRefs: result.unresolvedRefs || 0,
-          truncated: result.truncated || false,
-        });
-      }).catch(err => {
-        sendResponse({ error: err.message });
-      });
+      const CONVERT_TIMEOUT_MS = 60000;
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('转换超时 (60s)')), CONVERT_TIMEOUT_MS)
+      );
 
-      return true; // 保持通道开启
+      const safeSend = (data) => {
+        try { sendResponse(data); } catch (_) { /* popup 已关闭，忽略 */ }
+        if (chrome.runtime?.lastError) { /* 通道已关闭，静默忽略 */ }
+      };
+
+      Promise.race([convertDoc(opts), timeoutPromise])
+        .then(result => {
+          safeSend({
+            markdown: result.markdown,
+            title: result.title,
+            imageUrls: result.imageUrls,
+            pages: result.pages,
+            unresolvedRefs: result.unresolvedRefs || 0,
+            truncated: result.truncated || false,
+          });
+        })
+        .catch(err => {
+          safeSend({ error: err.message });
+        });
+
+      return true;
     }
   });
 
