@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "飞书文档转换器",
-  "version": "1.0",
-  "description": "一键将飞书文档转换为Markdown格式",
+  "version": "2.4",
+  "description": "飞书文档转Markdown — 文字颜色、DOCX h5/h6、ol/ul样式、table去双解析、监听器泄漏修复、LANG_ALIAS提升",
   "permissions": [
     "activeTab",
     "scripting",
@@ -34,6 +34,12 @@
   "background": {
     "service_worker": "background.js"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["jszip.min.js"],
+      "matches": ["https://*.feishu.cn/*", "https://*.larksuite.com/*"]
+    }
+  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

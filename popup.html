@@ -45,6 +45,31 @@
     .btn-secondary:hover { background: #f0f4ff; }
     .btn-success { background: #4CAF50; color: white; }
     .btn-success:hover { background: #43A047; }
+    .btn-accent { background: #FF9800; color: white; }
+    .btn-accent:hover { background: #F57C00; }
+    .btn-accent:disabled { background: #ccc; cursor: not-allowed; }
+
+    .tabs { display: flex; border-bottom: 2px solid #E0E0E0; margin-bottom: 8px; }
+    .tab {
+      flex: 1; padding: 8px; text-align: center; font-size: 13px;
+      cursor: pointer; color: #888; border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: all 0.2s;
+    }
+    .tab.active { color: #4A6CF7; border-bottom-color: #4A6CF7; font-weight: 600; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .history-list { max-height: 200px; overflow-y: auto; }
+    .history-item {
+      background: white; border-radius: 6px; padding: 8px 10px; margin-bottom: 4px;
+      font-size: 12px; cursor: pointer; display: flex; justify-content: space-between;
+      align-items: center; transition: background 0.15s;
+    }
+    .history-item:hover { background: #f0f4ff; }
+    .history-item .h-title { font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .history-item .h-meta { font-size: 11px; color: #888; margin-left: 8px; white-space: nowrap; }
+    .history-item .h-del { color: #ccc; cursor: pointer; margin-left: 8px; font-size: 14px; }
+    .history-item .h-del:hover { color: #C62828; }
 
     .status {
       margin-top: 8px; padding: 8px 10px; border-radius: 8px;
@@ -100,40 +125,71 @@
     <p>一键转换为 Markdown</p>
   </div>
 
-  <div class="content">
-    <div class="info-box" id="docInfo">
-      <div class="label">当前文档</div>
-      <div class="value" id="docTitle">🔄 检测中...</div>
-    </div>
-
-    <div class="options">
-      <label><input type="checkbox" id="optTables" checked> 保留表格</label>
-      <label><input type="checkbox" id="optImages" checked> 图片链接</label>
-      <label><input type="checkbox" id="optLinks" checked> 保留链接</label>
-      <label><input type="checkbox" id="optDebug"> 调试模式</label>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-primary" id="btnConvert" disabled>🔄 开始转换</button>
-      <button class="btn btn-success" id="btnDownload" disabled>💾 下载</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-secondary" id="btnCopy" disabled>📋 复制</button>
-      <button class="btn btn-secondary" id="btnPreview">👁 预览</button>
-    </div>
-
-    <div class="status" id="status"></div>
-
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-bar">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-      <div class="stats" id="stats"></div>
-    </div>
-
-    <div class="preview" id="preview"></div>
+  <div class="tabs">
+    <div class="tab active" data-tab="convert">🔄 转换</div>
+    <div class="tab" data-tab="history">📜 历史</div>
   </div>
 
+  <div class="content">
+    <!-- ====== 转换 Tab ====== -->
+    <div class="tab-content active" id="tabConvert">
+      <!-- URL 粘贴输入区 -->
+      <div class="info-box" id="urlInputBox">
+        <div class="label">粘贴飞书文档链接（非当前页面时使用）</div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <input type="text" id="urlInput" placeholder="https://xxx.feishu.cn/docx/ABC123"
+            style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;">
+          <button class="btn btn-primary" id="btnUrlGo" style="width:auto;padding:6px 14px;margin:0;font-size:12px;">打开</button>
+        </div>
+      </div>
+
+      <div class="info-box" id="docInfo">
+        <div class="label">当前文档</div>
+        <div class="value" id="docTitle">🔄 检测中...</div>
+        <div class="value" id="docUrl" style="font-size:11px;color:#888;margin-top:2px;word-break:break-all;"></div>
+      </div>
+
+      <div class="options">
+        <label><input type="checkbox" id="optTables" checked> 保留表格</label>
+        <label><input type="checkbox" id="optImages" checked> 图片链接</label>
+        <label><input type="checkbox" id="optLinks" checked> 保留链接</label>
+        <label><input type="checkbox" id="optDebug"> 调试模式</label>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnConvert" disabled>🔄 开始转换</button>
+        <button class="btn btn-success" id="btnDownload" disabled>💾 下载 .md</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-accent" id="btnZip" disabled>📦 图片+ZIP</button>
+        <button class="btn btn-accent" id="btnDocx" disabled>📝 导出DOCX</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btnCopy" disabled>📋 复制</button>
+        <button class="btn btn-secondary" id="btnPreview">👁 预览</button>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+
+      <div class="preview" id="preview"></div>
+    </div><!-- /tabConvert -->
+
+    <!-- ====== 历史 Tab ====== -->
+    <div class="tab-content" id="tabHistory">
+      <div class="history-list" id="historyList">
+        <div style="text-align:center;color:#888;padding:20px;font-size:13px;">暂无历史记录</div>
+      </div>
+    </div><!-- /tabHistory -->
+  </div>
+
+  <script src="jszip.min.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
