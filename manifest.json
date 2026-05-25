@@ -2,34 +2,23 @@
   "manifest_version": 3,
   "name": "飞书文档转换器",
   "version": "2.9",
-  "description": "飞书文档转Markdown — v2.9 P0鲁棒性修复(消息超时/block上限/空数据检测/占位冲突)+P1错误恢复(存储降级/下载反馈)",
-  "permissions": [
-    "storage",
-    "downloads",
-    "activeTab",
-    "alarms"
-  ],
-  "host_permissions": [
-    "https://*.feishu.cn/*"
-  ],
+  "description": "飞书文档转Markdown — v2.9 轮询action修正(poll_task/防竞态)+输入验证(iat数组/递归深度/空对象降级)",
+  "permissions": ["activeTab", "storage", "downloads", "alarms"],
+  "host_permissions": ["https://*.feishu.cn/*", "https://*.larksuite.com/*"],
   "background": {
     "service_worker": "background.js"
   },
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
   "content_scripts": [
     {
-      "matches": ["https://*.feishu.cn/*"],
+      "matches": ["https://*.feishu.cn/*", "https://*.larksuite.com/*"],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_end"
     }
   ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "飞书文档转换器"
+  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

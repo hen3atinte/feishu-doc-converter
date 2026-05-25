@@ -2,7 +2,7 @@
 // 飞书文档转换器 - Content Script (v2.9)
 // 功能：富文本渲染、多路径API、跨页引用解析、全块类型支持
 // v2.4-2.8 修复历史见 CHANGELOG
-// v2.9 新增：URL全局清洗(sanitizeUrl, 阻止javascript:/data:等危险协议)、P0×5修复(代码块保护/depth 4→8/表格内联代码保护/getPlainText扩展/跨子树循环检测)、P1 URL安全(9个块类型统一清洗)、P0鲁棒性(消息超时/block上限/空数据检测/占位冲突)
+// v2.9 新增：URL全局清洗(sanitizeUrl, 阻止javascript:/data:等危险协议)、P0×5修复(代码块保护/depth 4→8/表格内联代码保护/getPlainText扩展/跨子树循环检测)、P1 URL安全(9个块类型统一清洗)、P0鲁棒性(消息超时/block上限/空数据检测/占位冲突)、iat数组验证/递归深度上限/空对象降级
 // ============================================================
 
 (function () {
@@ -56,7 +56,7 @@
    */
   function renderRichText(blockData) {
     const iat = blockData?.initialAttributedTexts;
-    if (!iat) return '';
+    if (!iat || !Array.isArray(iat)) return '';
 
     let result = '';
 
@@ -601,6 +601,10 @@
   // ---- 核心转换引擎 ----
 
   function processBlock(blockId, blockMap, options, imageUrls, depth = 0, counter = {}, prevSiblingType = null, path = new Set()) {
+    // 递归深度保护：防止病理嵌套导致栈溢出
+    const MAX_DEPTH = 50;
+    if (depth > MAX_DEPTH) return '';
+
     const block = blockMap[blockId];
     if (!block) return '';
 
@@ -863,7 +867,7 @@
       truncated,
     };
     } finally {
-      _convertOpts = null;
+      _convertOpts = {};
     }
   }
 

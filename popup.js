@@ -8,6 +8,7 @@
 // v2.5 新增：DOCX URL &amp; 还原、unload→pagehide
 // v2.6 新增：ZIP replaceAll全局替换、DOCX空行可见化、page超限告警
 // v2.7 新增：DOCX块级间距优化、恢复历史预览同步、ZIP失败URL报告
+// v2.9 batch4: poll_task action修正/轮询竞态保护(pollingActive)
 // ============================================================
 
 (function () {
@@ -19,6 +20,7 @@
   let currentImageUrls = [];
   let currentTaskId = null;
   let pollTimer = null;
+  let pollingActive = false;
 
   // ---- DOM 引用 ----
   const $ = (id) => document.getElementById(id);
@@ -266,6 +268,11 @@
 
   async function pollConversion() {
     if (pollTimer) clearTimeout(pollTimer);
+    if (pollingActive) {
+      console.warn('[飞书转换器] 轮询已在进行中，跳过重复调用');
+      return;
+    }
+    pollingActive = true;
 
     const maxPolls = 120; // 最多轮询 2 分钟
     let polls = 0;
@@ -278,6 +285,7 @@
         polls++;
         if (polls > maxPolls) {
           pollTimer = null;
+          pollingActive = false;
           showStatus('❌ 转换超时', 'error');
           el.btnConvert.textContent = '🔄 重试';
           el.btnConvert.disabled = false;
@@ -291,7 +299,7 @@
         setProgress(lastProgress, `轮询中... (${polls}s)`);
 
         chrome.runtime.sendMessage({
-          action: 'get_status',
+          action: 'poll_task',
           taskId: currentTaskId,
         }).then(resp => {
           // SW 未响应或返回 undefined → 退避
@@ -322,9 +330,11 @@
             }
 
             saveToHistory();
+            pollingActive = false;
             resolve();
           } else if (resp.status === 'error') {
             pollTimer = null;
+            pollingActive = false;
             showStatus(`❌ ${resp.error}`, 'error');
             el.btnConvert.textContent = '🔄 重试';
             el.btnConvert.disabled = false;
@@ -551,7 +561,7 @@
       // 无序列表（-开头）
       .replace(/^- (.+)$/gm, '<__ul__>$1</__ul__>')
       // 段落（非HTML标签行）
-      .replace(/^(?!<[a-z_/])(.+)$/gm, '<p>$1</p>');
+      .replace(/^(?!<[a-z_\/])(.+)$/gm, '<p>$1</p>');
 
     // 合并相邻 ol 列表项
     html = html.replace(/(<__ol__>[\s\S]*?<\/__ol__>)(\n<__ol__>[\s\S]*?<\/__ol__>)*/g, (m) => {
