@@ -1,6 +1,8 @@
 // ============================================================
-// 飞书文档转换器 - Background Service Worker (v2.1)
+// 飞书文档转换器 - Background Service Worker (v2.6)
 // 功能：持久转换（chrome.storage.local 防SW空闲丢失）、状态管理、下载代理
+// v2.5 新增：alarm 定时清理过期任务（每5分钟）
+// v2.6：版本号同步
 // ============================================================
 
 'use strict';
@@ -182,3 +184,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // 启动时清理过期任务
 cleanupOldTasks();
+
+// 定时清理：每 5 分钟清理一次过期任务（防止 SW 长时间未重启导致堆积）
+chrome.alarms.create('cleanup_tasks', { periodInMinutes: 5 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'cleanup_tasks') {
+    cleanupOldTasks();
+  }
+});

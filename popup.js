@@ -1,8 +1,10 @@
 // ============================================================
-// 飞书文档转换器 - Popup Script (v2.4)
+// 飞书文档转换器 - Popup Script (v2.6)
 // 功能：Tab切换、URL粘贴导航、后台持久转换、XSS安全DOCX、ZIP下载、历史
 // 修复：活跃任务恢复、localStorage溢出、DOCX URL协议白名单、HTML实体保护
 // v2.4 新增：DOCX h5/h6支持、CSS ol/ul样式、tab监听器内存泄漏修复、版本号同步
+// v2.5 新增：DOCX URL &amp; 还原、unload→pagehide
+// v2.6 新增：ZIP replaceAll全局替换、DOCX空行可见化、page超限告警
 // ============================================================
 
 (function () {
@@ -297,7 +299,7 @@
             currentTitle = resp.result.title;
             currentImageUrls = resp.result.imageUrls || [];
 
-            setProgress(100, `✅ 完成 | ${currentTitle} | ${(currentMarkdown.length / 1024).toFixed(1)} KB | ${currentImageUrls.length} 张图`);
+            setProgress(100, `✅ 完成 | ${currentTitle} | ${(currentMarkdown.length / 1024).toFixed(1)} KB | ${currentImageUrls.length} 张图${resp.result.truncated ? ' (已达页数上限)' : ''}`);
             enableButtons(true);
             el.btnConvert.textContent = '🔄 再次转换';
             el.btnConvert.disabled = false;
@@ -389,8 +391,8 @@
               const filename = `img_${String(i + idx).padStart(3, '0')}.${ext}`;
               imgFolder.file(filename, blob);
 
-              // 替换 Markdown 中的远程 URL 为本地路径
-              markdown = markdown.replace(img.url, `images/${filename}`);
+              // 替换 Markdown 中的所有该远程 URL 为本地路径（split+join 安全替换，不受 regex 特殊字符影响）
+              markdown = markdown.split(img.url).join(`images/${filename}`);
 
               return { success: true, filename };
             } catch (err) {
@@ -485,13 +487,13 @@
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       // 代码块
       .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-      // 图片（过滤危险 URL 协议）
+      // 图片（过滤危险 URL 协议，还原 &amp; 转义）
       .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
-        return `<img src="${sanitizeUrl(url)}" alt="${alt}">`;
+        return `<img src="${sanitizeUrl(url).replace(/&amp;/g, '&')}" alt="${alt}">`;
       })
-      // 链接（过滤危险 URL 协议）
+      // 链接（过滤危险 URL 协议，还原 &amp; 转义）
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
-        return `<a href="${sanitizeUrl(url)}">${text}</a>`;
+        return `<a href="${sanitizeUrl(url).replace(/&amp;/g, '&')}">${text}</a>`;
       })
       // 分割线
       .replace(/^---$/gm, '<hr>')
@@ -514,6 +516,10 @@
       const items = m.replace(/<__ul__>([\s\S]*?)<\/__ul__>/g, '<li>$1</li>');
       return `<ul>${items}</ul>`;
     });
+
+    // 连续空行 → 可见换行（HTML 中 \n 不产生视觉间距）
+    html = html.replace(/\n\n+/g, '<br><br>');
+    html = html.replace(/\n/g, '');
 
     const fullHtml = `<!DOCTYPE html>
 <html>
@@ -801,8 +807,8 @@ ${html}
     await detectDoc();
   })();
 
-  // 关闭 popup 前保存状态
-  window.addEventListener('unload', () => {
+  // 关闭 popup 前保存状态（pagehide 比 unload 更可靠）
+  window.addEventListener('pagehide', () => {
     if (currentMarkdown) {
       chrome.storage.local.set({
         lastMarkdown: currentMarkdown,

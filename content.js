@@ -1,8 +1,10 @@
 // ============================================================
-// 飞书文档转换器 - Content Script (v2.4)
+// 飞书文档转换器 - Content Script (v2.6)
 // 功能：富文本渲染、多路径API、跨页引用解析、全块类型支持
 // 修复：h5/h6支持、代码语言别名、callout空格、quote多行、有序列表边界、DOCX列表、预览扩容
 // v2.4 新增：文字颜色/背景色支持、table单元格去双重解析、LANG_ALIAS提升至模块级、无效跨页引用循环优化
+// v2.5 新增：grid/gallery空容器过滤、link_card无url回退、todo空文checkbox保留、image无src含alt、grid counter隔离
+// v2.6 新增：ordered start编号支持、page超限截断告警、死代码清理
 // ============================================================
 
 (function () {
@@ -303,7 +305,9 @@
     ordered(block, ctx) {
       const t = renderRichText(block.data);
       if (!t) return '';
-      if (!ctx.counter[ctx.depth]) ctx.counter[ctx.depth] = 0;
+      // 支持飞书 ordered 块的自定义 start 属性（默认 1）
+      const start = block.data?.ordered?.start || 1;
+      if (!(ctx.depth in ctx.counter)) ctx.counter[ctx.depth] = (start > 0 ? start : 1) - 1;
       ctx.counter[ctx.depth]++;
       const indent = '  '.repeat(Math.min(ctx.depth, 4));
       return `${indent}${ctx.counter[ctx.depth]}. ${t}\n`;
@@ -438,8 +442,8 @@
     image(block, ctx) {
       const src = block.data?.image?.source_url ||
                   block.data?.file?.source_url || '';
-      const alt = renderRichText(block.data) || 'image';
-      if (!src) return '\n[图片]\n';
+      const alt = renderRichText(block.data) || '图片';
+      if (!src) return `\n[图片: ${alt}]\n`;
       if (ctx.options?.images === false) {
         return `\n[图片: ${alt}]\n`;
       }
@@ -455,7 +459,8 @@
       const done = block.data?.todo?.done || false;
       const assignee = block.data?.todo?.assignee?.name || '';
       const extra = assignee ? ` *(负责人: @${assignee})*` : '';
-      return t ? `- [${done ? 'x' : ' '}] ${t}${extra}\n` : '';
+      // 即使内容为空也保留 checkbox 状态（飞书支持空白待办项）
+      return `- [${done ? 'x' : ' '}] ${t || '待办事项'}${extra}\n`;
     },
 
     // --- 链接卡片 ---
@@ -464,7 +469,8 @@
       const title = block.data?.link_card?.title || renderRichText(block.data) || url;
       const desc = block.data?.link_card?.description || '';
       const thumb = block.data?.link_card?.thumbnail || '';
-      if (!url) return '';
+      // 无 url 时输出纯文本信息，不丢失标题
+      if (!url) return title ? `\n> 🔗 ${title}\n` : '';
       let md = `\n> **🔗 [${title}](${url})**\n`;
       if (desc) md += `> ${desc}\n`;
       if (thumb) md += `> ![thumb](${thumb})\n`;
@@ -489,17 +495,20 @@
     gallery(block, ctx) {
       const children = block.data?.children || [];
       if (children.length === 0) return '';
-      let md = '\n<div class="gallery">\n\n';
+      let images = '';
       for (const cid of children) {
         const cb = ctx.blockMap[cid];
         if (cb && cb.data?.type === 'image') {
           const src = cb.data?.image?.source_url || cb.data?.file?.source_url || '';
-          if (src && ctx.imageUrls) ctx.imageUrls.push({ url: src, alt: 'gallery' });
-          md += src ? `![gallery](${src})\n\n` : '';
+          if (src) {
+            if (ctx.imageUrls) ctx.imageUrls.push({ url: src, alt: 'gallery' });
+            images += `![gallery](${src})\n\n`;
+          }
         }
       }
-      md += '</div>\n\n';
-      return md;
+      // 无有效图片时不输出空容器
+      if (!images.trim()) return '';
+      return '\n<div class="gallery">\n\n' + images + '</div>\n\n';
     },
 
     // --- 任务 ---
@@ -569,17 +578,20 @@
     grid(block, ctx) {
       const children = block.data?.children || [];
       if (children.length === 0) return '';
-      let md = '\n<div class="grid">\n\n';
+      let innerContent = '';
       for (const cid of children) {
-        md += '<div class="column">\n\n';
         const cb = ctx.blockMap[cid];
         if (cb) {
-          md += processBlock(cid, ctx.blockMap, ctx.options, ctx.imageUrls, ctx.depth + 1, ctx.counter);
+          // 每列使用独立 counter 对象，避免列间有序列表编号互相干扰
+          const colResult = processBlock(cid, ctx.blockMap, ctx.options, ctx.imageUrls, ctx.depth + 1, {});
+          if (colResult.trim()) {
+            innerContent += '<div class="column">\n\n' + colResult + '\n</div>\n\n';
+          }
         }
-        md += '\n</div>\n\n';
       }
-      md += '</div>\n\n';
-      return md;
+      // 所有列均为空时不输出空容器
+      if (!innerContent.trim()) return '';
+      return '\n<div class="grid">\n\n' + innerContent + '</div>\n\n';
     },
 
     // --- 附件（旧格式） ---
@@ -614,7 +626,7 @@
 
     // 有序列表边界检测：当前 block 是 ordered 但前一个兄弟不是 ordered → 新列表开始
     if (type === 'ordered' && prevSiblingType !== 'ordered') {
-      counter[depth] = 0;
+      delete counter[depth];
     }
 
     const ctx = { blockMap, options, imageUrls, depth, counter };
@@ -674,12 +686,11 @@
     const mergedBlockSeq = [];
     const seqIds = new Set(); // O(1) 去重（替代 Array.includes O(n)）
 
-    // ... (existing vars)
-    let allImageUrls = [];
     let pageNum = 1;
     let cursor = '';
     const maxPages = 20; // 安全上限
     let firstTitle = '';
+    let truncated = false;
 
     while (pageNum <= maxPages) {
       const url = new URL(endpoint.url);
@@ -741,6 +752,11 @@
       await new Promise(r => setTimeout(r, 200));
     }
 
+    // 超限截断标记
+    if (pageNum > maxPages) {
+      truncated = true;
+    }
+
     // ---- 跨页引用解析：扫描未解析的子 Block ----
     // 注意：当前实现中，飞书 API 的 block_map 在同文档内应是完整的。
     // 仅需单次扫描：找出 blockMap 中被引用但不存在的 ID，插入占位文本。
@@ -794,6 +810,7 @@
       pages: pageNum,
       imageUrls,
       unresolvedRefs: unresolvedCount,
+      truncated,
     };
   }
 
@@ -866,7 +883,7 @@
         statusEl.style.color = '#2E7D32';
         statusEl.innerHTML = `✅ 转换完成！<br>
           标题: ${result.title}<br>
-          页数: ${result.pages}<br>
+          页数: ${result.pages}${result.truncated ? ' (已达上限)' : ''}<br>
           大小: ${(result.markdown.length / 1024).toFixed(1)} KB<br>
           图片: ${result.imageUrls.length} 张`;
         if (result.unresolvedRefs > 0) {
@@ -924,6 +941,7 @@
           imageUrls: result.imageUrls,
           pages: result.pages,
           unresolvedRefs: result.unresolvedRefs || 0,
+          truncated: result.truncated || false,
         });
       }).catch(err => {
         sendResponse({ error: err.message });

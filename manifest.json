@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "飞书文档转换器",
-  "version": "2.4",
-  "description": "飞书文档转Markdown — 文字颜色、DOCX h5/h6、ol/ul样式、table去双解析、监听器泄漏修复、LANG_ALIAS提升",
+  "version": "2.6",
+  "description": "飞书文档转Markdown — ordered start编号、ZIP全局URL替换、page超限告警、DOCX空行可见化、死代码清理",
   "permissions": [
     "activeTab",
     "scripting",
     "downloads",
-    "storage"
+    "storage",
+    "alarms"
   ],
   "host_permissions": [
     "https://*.feishu.cn/*",
