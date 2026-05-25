@@ -1,7 +1,8 @@
 // ============================================================
-// 飞书文档转换器 - Background Service Worker (v2.8)
+// 飞书文档转换器 - Background Service Worker (v2.9)
 // 功能：持久转换（chrome.storage.local 防SW空闲丢失）、状态管理、下载代理
 // v2.8 修复：tabId存在性验证、大文件优先Blob下载（>500KB避免data URI溢出）
+// v2.9 无变更
 // v2.5 新增：alarm 定时清理过期任务（每5分钟）
 // v2.6：版本号同步
 // v2.7：（无 background.js 变更，版本号同步）

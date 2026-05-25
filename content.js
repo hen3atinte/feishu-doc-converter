@@ -1,8 +1,8 @@
 // ============================================================
-// 飞书文档转换器 - Content Script (v2.8)
+// 飞书文档转换器 - Content Script (v2.9)
 // 功能：富文本渲染、多路径API、跨页引用解析、全块类型支持
-// v2.4-2.7 修复历史见 CHANGELOG
-// v2.8 新增：P0×7修复(页截断误判/颜色剥离/XSS/语言路径/assignees类型)、API超时+非JSON保护、无限递归path检测、LANG_ALIAS 50+语言、颜色映射补全、inlineCode+粗体组合
+// v2.4-2.8 修复历史见 CHANGELOG
+// v2.9 新增：URL全局清洗(sanitizeUrl, 阻止javascript:/data:等危险协议)、P0×5修复(代码块内容保护/depth 4→8/表格内联代码保护/getPlainText扩展/跨子树循环检测)、P1 URL安全(9个块类型统一清洗)
 // ============================================================
 
 (function () {
@@ -88,7 +88,7 @@
 
         // 链接优先（可能是带链接的文本）
         if (style.link?.url && _convertOpts.links !== false) {
-          text = `[${text}](${style.link.url})`;
+          text = `[${text}](${sanitizeUrl(style.link.url)})`;
         }
 
         // 行内代码（Markdown 不支持反引号内嵌粗体/斜体，使用 HTML 保留格式）
@@ -148,8 +148,8 @@
       // @文档
       case 'mentionDoc': {
         const title = el.mentionDoc?.title || '文档';
-        const url = el.mentionDoc?.url || '';
-        return url ? `[📄 ${title}](${url})` : `📄 ${title}（无可用链接）`;
+        const url = sanitizeUrl(el.mentionDoc?.url || '');
+        return url !== '#' ? `[📄 ${title}](${url})` : `📄 ${title}（无可用链接）`;
       }
 
       // @用户
@@ -200,6 +200,12 @@
         if (el.textRun) return el.textRun.text || '';
         if (el.mentionDoc) return el.mentionDoc.title || '';
         if (el.mentionUser) return '@' + (el.mentionUser.name || '');
+        if (el.mentionDate || el.type === 'date' || el._type === 'mentionDate')
+          return el.mentionDate?.date || el.date || '';
+        if (el.inlineEquation || el.type === 'equation' || el._type === 'inlineEquation')
+          return el.inlineEquation?.equation || el.equation || '';
+        if (el.emoji || el.type === 'emoji' || el._type === 'emoji')
+          return el.emoji?.text || el.text || '';
         return el.text || '';
       }).join('');
     }).join('');
@@ -322,7 +328,7 @@
     // --- 列表 ---
     bullet(block, ctx) {
       const t = renderRichText(block.data);
-      const indent = '  '.repeat(Math.min(ctx.depth, 4));
+      const indent = '  '.repeat(Math.min(ctx.depth, 8));
       return t ? `${indent}- ${t}\n` : '';
     },
     ordered(block, ctx) {
@@ -332,7 +338,7 @@
       const start = block.data?.ordered?.start || 1;
       if (!(ctx.depth in ctx.counter)) ctx.counter[ctx.depth] = (start > 0 ? start : 1) - 1;
       ctx.counter[ctx.depth]++;
-      const indent = '  '.repeat(Math.min(ctx.depth, 4));
+      const indent = '  '.repeat(Math.min(ctx.depth, 8));
       return `${indent}${ctx.counter[ctx.depth]}. ${t}\n`;
     },
 
@@ -425,7 +431,13 @@
             }
 
             // 转义 Markdown 表格中可能破坏结构的特殊字符
-            cells.push(inner
+            // 保护行内代码：反引号包裹的片段不应被转义
+            const codeParts = [];
+            let escaped = inner.replace(/`[^`]*`/g, (m) => {
+              codeParts.push(m);
+              return `\x00IDX${codeParts.length - 1}\x00`;
+            });
+            escaped = escaped
               .replace(/\\/g, '\\\\')
               .replace(/\|/g, '\\|')
               .replace(/\*/g, '\\*')
@@ -433,8 +445,9 @@
               .replace(/\[/g, '\\[')
               .replace(/\]/g, '\\]')
               .replace(/~/g, '\\~')
-              .replace(/`/g, '\\`')
-              .replace(/\n/g, ' '));
+              .replace(/\n/g, ' ');
+            escaped = escaped.replace(/\x00IDX(\d+)\x00/g, (_, i) => codeParts[parseInt(i)]);
+            cells.push(escaped);
           }
 
         rows.push(cells);
@@ -463,15 +476,17 @@
 
     // --- 图片 ---
     image(block, ctx) {
-      const src = block.data?.image?.source_url ||
+      const rawSrc = block.data?.image?.source_url ||
                   block.data?.file?.source_url || '';
+      const src = sanitizeUrl(rawSrc);
       const alt = renderRichText(block.data) || '图片';
-      if (!src) return `\n[图片: ${alt}]\n`;
+      if (src === '#') return `\n[图片: ${alt}]\n`;
       if (ctx.options?.images === false) {
         return `\n[图片: ${alt}]\n`;
       }
       if (ctx.imageUrls) {
-        ctx.imageUrls.push({ url: src, alt });
+        // 图片下载使用原始 URL，保证飞书 CDN 链接可访问
+        ctx.imageUrls.push({ url: rawSrc, alt });
       }
       return `\n![${alt}](${src})\n`;
     },
@@ -488,30 +503,31 @@
 
     // --- 链接卡片 ---
     link_card(block) {
-      const url = block.data?.link_card?.url || block.data?.link?.url || '';
-      const title = block.data?.link_card?.title || renderRichText(block.data) || url;
+      const rawUrl = block.data?.link_card?.url || block.data?.link?.url || '';
+      const url = sanitizeUrl(rawUrl);
+      const title = block.data?.link_card?.title || renderRichText(block.data) || rawUrl;
       const desc = block.data?.link_card?.description || '';
-      const thumb = block.data?.link_card?.thumbnail || '';
-      // 无 url 时输出纯文本信息，不丢失标题
-      if (!url) return title ? `\n> 🔗 ${title}\n` : '';
+      const thumb = sanitizeUrl(block.data?.link_card?.thumbnail || '');
+      // 无有效 url 时输出纯文本信息，不丢失标题
+      if (url === '#') return title ? `\n> 🔗 ${title}\n` : '';
       let md = `\n> **🔗 [${title}](${url})**\n`;
       if (desc) md += `> ${desc}\n`;
-      if (thumb) md += `> ![thumb](${thumb})\n`;
+      if (thumb !== '#') md += `> ![thumb](${thumb})\n`;
       return md + '\n';
     },
 
     // --- 文件/附件 ---
     file(block) {
       const name = block.data?.file?.name || renderRichText(block.data) || '附件';
-      const url = block.data?.file?.url || block.data?.file?.source_url || '';
-      return url ? `\n📎 [${name}](${url})\n` : `\n📎 ${name}\n`;
+      const url = sanitizeUrl(block.data?.file?.url || block.data?.file?.source_url || '');
+      return url !== '#' ? `\n📎 [${name}](${url})\n` : `\n📎 ${name}\n`;
     },
 
     // --- 多维表格/Bitable ---
     bitable(block) {
       const title = renderRichText(block.data) || '多维表格';
-      const url = block.data?.bitable?.url || '';
-      return url ? `\n> 📊 **多维表格**: [${title}](${url})\n` : `\n> 📊 **多维表格**: ${title}\n`;
+      const url = sanitizeUrl(block.data?.bitable?.url || '');
+      return url !== '#' ? `\n> 📊 **多维表格**: [${title}](${url})\n` : `\n> 📊 **多维表格**: ${title}\n`;
     },
 
     // --- 图片组/Gallery ---
@@ -522,9 +538,10 @@
       for (const cid of children) {
         const cb = ctx.blockMap[cid];
         if (cb && cb.data?.type === 'image') {
-          const src = cb.data?.image?.source_url || cb.data?.file?.source_url || '';
-          if (src) {
-            if (ctx.imageUrls) ctx.imageUrls.push({ url: src, alt: 'gallery' });
+          const rawSrc = cb.data?.image?.source_url || cb.data?.file?.source_url || '';
+          const src = sanitizeUrl(rawSrc);
+          if (src !== '#') {
+            if (ctx.imageUrls) ctx.imageUrls.push({ url: rawSrc, alt: 'gallery' });
             images += `![gallery](${src})\n\n`;
           }
         }
@@ -552,8 +569,8 @@
     // --- 流程图/Diagram ---
     diagram(block) {
       const title = renderRichText(block.data) || '流程图';
-      const url = block.data?.diagram?.url || '';
-      return url
+      const url = sanitizeUrl(block.data?.diagram?.url || '');
+      return url !== '#'
         ? `\n> 🗺 **流程图**: [${title}](${url})\n`
         : `\n> 🗺 **流程图**: ${title}（需在飞书中查看）\n`;
     },
@@ -561,8 +578,8 @@
     // --- 思维导图 ---
     mindnote(block) {
       const title = renderRichText(block.data) || '思维导图';
-      const url = block.data?.mindnote?.url || '';
-      return url
+      const url = sanitizeUrl(block.data?.mindnote?.url || '');
+      return url !== '#'
         ? `\n> 🧠 **思维导图**: [${title}](${url})\n`
         : `\n> 🧠 **思维导图**: ${title}（需在飞书中查看）\n`;
     },
@@ -576,18 +593,18 @@
     // --- 页面引用 ---
     page(block) {
       const title = block.data?.page?.title || renderRichText(block.data) || '';
-      const url = block.data?.page?.url || '';
-      if (!title && !url) return '';
-      return url
+      const url = sanitizeUrl(block.data?.page?.url || '');
+      if (!title && url === '#') return '';
+      return url !== '#'
         ? `\n> 📄 **页面引用**: [${title || url}](${url})\n`
         : `\n> 📄 **页面引用**: ${title}\n`;
     },
 
     // --- 嵌入网页/iframe ---
     iframe(block) {
-      const url = block.data?.iframe?.url || block.data?.embed?.url || '';
+      const url = sanitizeUrl(block.data?.iframe?.url || block.data?.embed?.url || '');
       const title = renderRichText(block.data) || '嵌入内容';
-      return url
+      return url !== '#'
         ? `\n> 🌐 **嵌入**: [${title}](${url})\n`
         : `\n> 🌐 **嵌入**: ${title}（需在飞书中查看）\n`;
     },
@@ -621,8 +638,8 @@
     // --- 附件（旧格式） ---
     attachment(block) {
       const name = block.data?.attachment?.name || '附件';
-      const url = block.data?.attachment?.url || '';
-      return url ? `\n📎 [${name}](${url})\n` : `\n📎 ${name}\n`;
+      const url = sanitizeUrl(block.data?.attachment?.url || '');
+      return url !== '#' ? `\n📎 [${name}](${url})\n` : `\n📎 ${name}\n`;
     },
 
     // --- 兜底 ---
@@ -710,6 +727,33 @@
       .replace(/^\.+/, '_')            // 开头点号（隐藏文件）
       .trim()
       .substring(0, 200);              // 最大长度限制
+  }
+
+  /**
+   * 安全 URL 清洗：阻止 dangerous protocols，防止 XSS 注入
+   * 白名单：http/https/ftp/mailto，data:image/*，相对路径/锚点
+   * 用于 Markdown 链接和图片引用（后续 HTML 渲染时仍需二次校验）
+   */
+  function sanitizeUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return '#';
+    const url = rawUrl.trim();
+    if (!url) return '#';
+
+    // 相对路径或锚点：安全
+    if (/^[#\/]/.test(url)) return url;
+
+    // data URI：仅允许安全图片类型
+    if (/^data:image\/(png|jpeg|gif|webp|bmp|tiff);/i.test(url)) return url;
+
+    // 提取协议
+    const m = url.match(/^([a-zA-Z][a-zA-Z0-9+\-.]*):/);
+    if (m) {
+      const protocol = m[1].toLowerCase();
+      const allowed = ['http', 'https', 'ftp', 'mailto'];
+      if (!allowed.includes(protocol)) return '#'; // 危险协议 → 无害锚点
+    }
+    // 无协议则为相对路径或裸域名，安全
+    return url;
   }
 
   async function convertDoc(options) {
@@ -851,6 +895,7 @@
     let allLines = [];
     const imageUrls = [];
     const seen = new Set();
+    const sharedPath = new Set(); // 跨子树循环引用检测
 
     let prevSiblingType = null;
     for (const blockId of mergedBlockSeq) {
@@ -860,15 +905,27 @@
       const block = mergedBlockMap[blockId];
       const blockType = block?.data?.type || 'text';
 
-      const line = processBlock(blockId, mergedBlockMap, options, imageUrls, 0, {}, prevSiblingType);
+      const line = processBlock(blockId, mergedBlockMap, options, imageUrls, 0, {}, prevSiblingType, sharedPath);
       if (line) allLines.push(line);
       prevSiblingType = blockType;
     }
 
     // 清理输出
     let markdown = allLines.join('');
+
+    // 保护代码块：暂存 ```...``` 块，避免清理正则破坏代码内容
+    const codeBlocks = [];
+    markdown = markdown.replace(/```[\s\S]*?```/g, (match) => {
+      codeBlocks.push(match);
+      return `\n__CODEBLOCK_${codeBlocks.length - 1}__\n`;
+    });
+
     markdown = markdown.replace(/\n{3,}/g, '\n\n');
     markdown = markdown.replace(/\n{2,}---\n{2,}/g, '\n\n---\n\n');
+
+    // 恢复代码块
+    markdown = markdown.replace(/__CODEBLOCK_(\d+)__/g, (_, i) => codeBlocks[parseInt(i)]);
+
     markdown = markdown.trim();
 
     if (!firstTitle) {

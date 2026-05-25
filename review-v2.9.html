@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飞书文档转换器 v2.9 — 10层深度审查报告</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f9fa; color: #1a1a2e; padding: 20px; line-height: 1.7; }
+.container { max-width: 1400px; margin: 0 auto; }
+h1 { font-size: 24px; color: #1a1a2e; border-bottom: 3px solid #6B8CFF; padding-bottom: 10px; margin-bottom: 8px; }
+h2 { font-size: 18px; color: #4A6CF7; margin-top: 32px; margin-bottom: 12px; padding: 8px 14px; background: #EEF2FF; border-radius: 6px; border-left: 4px solid #6B8CFF; }
+h3 { font-size: 15px; color: #555; margin-top: 20px; margin-bottom: 8px; }
+.summary { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
+.stat-card { background: white; border-radius: 10px; padding: 14px 20px; min-width: 120px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.stat-card .num { font-size: 28px; font-weight: 700; }
+.stat-card .label { font-size: 12px; color: #888; margin-top: 2px; }
+.stat-card.p0 { border-top: 3px solid #D32F2F; }
+.stat-card.p0 .num { color: #D32F2F; }
+.stat-card.p1 { border-top: 3px solid #F57C00; }
+.stat-card.p1 .num { color: #F57C00; }
+.stat-card.p2 { border-top: 3px solid #388E3C; }
+.stat-card.p2 .num { color: #388E3C; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+th { background: #f0f2ff; padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 600; color: #4A6CF7; border-bottom: 2px solid #ddd; }
+td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #eee; vertical-align: top; }
+tr:hover td { background: #fafbff; }
+.sev { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.sev-p0 { background: #FFEBEE; color: #C62828; }
+.sev-p1 { background: #FFF3E0; color: #E65100; }
+.sev-p2 { background: #E8F5E9; color: #2E7D32; }
+.code { font-family: "SF Mono", Consolas, monospace; font-size: 11px; background: #f5f5f5; padding: 1px 5px; border-radius: 3px; color: #D32F2F; }
+.file-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-family: monospace; }
+.file-cs { background: #E3F2FD; color: #1565C0; }
+.file-ps { background: #FFF3E0; color: #E65100; }
+.file-bg { background: #F3E5F5; color: #7B1FA2; }
+.file-html { background: #E8F5E9; color: #2E7D32; }
+.file-mf { background: #FFF8E1; color: #F57F00; }
+.toc { background: white; border-radius: 8px; padding: 16px 20px; margin: 16px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.toc a { color: #4A6CF7; text-decoration: none; font-size: 13px; }
+.toc a:hover { text-decoration: underline; }
+.toc ul { columns: 3; list-style: none; padding: 0; }
+.toc li { padding: 2px 0; font-size: 13px; }
+.fix-status { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+.fix-done { background: #C8E6C9; color: #2E7D32; }
+.fix-todo { background: #FFECB3; color: #F57F00; }
+.note { background: #E3F2FD; border-left: 4px solid #2196F3; padding: 10px 14px; margin: 14px 0; border-radius: 4px; font-size: 13px; }
+.warn { background: #FFF3E0; border-left: 4px solid #FF9800; padding: 10px 14px; margin: 14px 0; border-radius: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>📊 飞书文档转换器 v2.9 — 10层深度审查报告</h1>
+
+<div class="summary">
+  <div class="stat-card p0"><div class="num">23</div><div class="label">🔴 P0 致命</div></div>
+  <div class="stat-card p1"><div class="num">68</div><div class="label">🟡 P1 严重</div></div>
+  <div class="stat-card p2"><div class="num">119</div><div class="label">🟢 P2 改进</div></div>
+  <div class="stat-card" style="border-top:3px solid #6B8CFF;"><div class="num" style="color:#6B8CFF;">210</div><div class="label">📋 总计</div></div>
+</div>
+
+<div class="note"><strong>审查范围：</strong>content.js(1042行) + popup.js(845行) + background.js(217行) + popup.html(196行) + manifest.json(50行) = 2350行<br>
+<strong>审查方法：</strong>10层深度分析（Bug/语法→鲁棒性→缺失功能→代码质量→XSS安全→性能→UX/无障碍→可维护性→MV3合规→架构）</div>
+
+<div class="toc">
+<strong>📑 目录：</strong>
+<ul>
+<li><a href="#L1">L1 语法/逻辑/Bug</a> (P0×9 P1×9 P2×5)</li>
+<li><a href="#L2">L2 鲁棒性/异常处理</a> (P0×4 P1×10 P2×6)</li>
+<li><a href="#L3">L3 缺失功能</a> (P0×3 P1×14 P2×24)</li>
+<li><a href="#L4">L4 代码质量/DRY</a> (P0×0 P1×7 P2×18)</li>
+<li><a href="#L5">L5 XSS/安全</a> (P0×4 P1×8 P2×6)</li>
+<li><a href="#L6">L6 性能优化</a> (P0×1 P1×8 P2×12)</li>
+<li><a href="#L7">L7 UX/无障碍</a> (P0×1 P1×4 P2×16)</li>
+<li><a href="#L8">L8 可维护性/测试</a> (P0×0 P1×4 P2×14)</li>
+<li><a href="#L9">L9 MV3/平台合规</a> (P0×0 P1×2 P2×8)</li>
+<li><a href="#L10">L10 架构/设计</a> (P0×1 P1×2 P2×10)</li>
+</ul>
+</div>
+
+<!-- ==================== L1 ==================== -->
+<h2 id="L1">L1：语法错误 / 逻辑 Bug / 边界条件</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>行</th><th>问题描述</th></tr>
+
+<tr><td>1</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>95-120</td><td><b>inlineCode+strikethrough/underline 组合被截断</b>：inlineCode 分支（L95-104）return text 后，L120 `strikethrough` 和 L124 `underline` 永远不会被执行。若飞书数据中同时有 inlineCode+strikethrough，删除线丢失。</td></tr>
+
+<tr><td>2</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>140-143</td><td><b>背景色标记在 inlineCode 中语义错误</b>：L142 `==text==` 用于高亮，但若 text 已被 inlineCode 包裹为 `<code>...</code>`，高亮标记 `==` 无效且在 HTML 中显示为字面量。</td></tr>
+
+<tr><td>3</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>96</td><td><b>inlineCode+粗体+链接组合丢失</b>：若元素同时有 link.url + inlineCode + bold，L90 链接先处理，L96 inlineCode 覆盖为 HTML 标签，但链接 URL 信息已并入 text，在 &lt;code&gt; 内不再是有效 Markdown 链接。</td></tr>
+
+<tr><td>4</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>870-871</td><td><b>代码块内空行被全局正则破坏</b>：`/\n{3,}/g` 和分割线正则作用于整个 markdown 输出，会错误压缩代码块（<code>```...```</code>）内的多空行和包含 <code>---</code> 的行。</td></tr>
+
+<tr><td>5</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>326,336</td><td><b>depth>4 嵌套层级压扁</b>：bullet 和 ordered 缩进使用 `Math.min(ctx.depth, 4)`，超过 4 层的嵌套内容被压到同一层级，丢失语义层级。</td></tr>
+
+<tr><td>6</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>435-437</td><td><b>table 单元格 Markdown 转义破坏代码</b>：单元格内所有 `\` `|` `*` 等字符被无条件转义，若单元格内含 Markdown 代码标签（如 <code>`inline code`</code>），反引号会被转义为 `\``，破坏语义。</td></tr>
+
+<tr><td>7</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>195-205</td><td><b>getPlainText 遗漏元素类型</b>：仅处理 textRun/mentionDoc/mentionUser，遗漏 mentionDate、inlineEquation、emoji、链接等类型，导致代码块/表格纯文本提取内容不完整。</td></tr>
+
+<tr><td>8</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>861</td><td><b>processBlock 顶层调用不传 path</b>：L861 调用 `processBlock(..., 0, {}, prevSiblingType)` 未传 path 参数，使用默认 `new Set()`。若顶级 block 存在循环引用（如飞书 API 数据异常），无法检测。</td></tr>
+
+<tr><td>9</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>332-337</td><td><b>ordered 列表计数器跨深度污染</b>：`ctx.counter[depth]` 在不同子树间共享同一个 counter 对象。若 block A 有 ordered 子项和 block B 有 ordered 子项同深度，计数器会相互干扰。</td></tr>
+
+<tr><td>10</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>368</td><td><b>callout 多行内容丢失引用格式</b>：仅第一行加 `> ` 前缀，多行 callout 内容的后续行无引用前缀，Markdown 渲染时失去引用块视觉连续性。</td></tr>
+
+<tr><td>11</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>483</td><td><b>todo assignee 空检查不完整</b>：`block.data?.todo?.assignee?.name` — 若 assignee 为 null，`assignee?.name` 返回 undefined，`|| ''` 回退正确。但若 assignee 为空对象 `{}`，assignee.name 返回 undefined，回退也正确。无实际 bug。</td></tr>
+
+<tr><td>12</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>626-636</td><td><b>_default 未知块类型的 children 递归依赖外部</b>：`_default` 返回空字符串，依靠 processBlock 的外部递归处理 children。但若 _default 用于根级未知块，children 中的内容会丢失层级的缩进/容器语义。</td></tr>
+
+<tr><td>13</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>716</td><td><b>_convertOpts 无错误重置</b>：convertDoc 没有 try-finally 来重置 _convertOpts，如果转换中途抛出异常，下次调用可能残留旧选项。L716 设置 _convertOpts，无 finally 清理。</td></tr>
+
+<tr><td>14</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>336</td><td><b>downloadMarkdown 文件名含路径分隔符</b>：`currentTitle` 可能包含 `/` 或 `\`，直接拼接为文件名会导致下载到子目录或失败。</td></tr>
+
+<tr><td>15</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>382</td><td><b>ZIP 图片 fetch 无超时</b>：`fetch(img.url, { mode: 'cors' })` 无 AbortController/超时，网络慢时可能永久挂起。</td></tr>
+
+<tr><td>16</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>593</td><td><b>DOCX 导出文件名未清洗</b>：`${currentTitle}.doc` 直接使用 title，含特殊字符时可能导致文件保存失败。</td></tr>
+
+<tr><td>17</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-bg">background.js</span></td><td>164</td><td><b>dataUri 中日文文件名编码问题</b>：`encodeURIComponent(content)` 对大文件可能正确，但 `data:...charset=utf-8,...` 编码后的中文内容在某些系统上下载时会乱码。</td></tr>
+
+<tr><td>18</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>798-799</td><td><b>block_sequence 去重使用 O(n) Set lookup</b>：每个 ID 检查 `seqIds.has(id)`，大文档（数千 block）累积开销显著，但 Set 查找是 O(1)，实际无需优化。排查后无问题。</td></tr>
+
+<tr><td>19</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>15-32</td><td><b>LANG_ALIAS 有 14 个自身映射</b>：java→java, rust→rust 等冗余条目消耗内存且无功能意义。</td></tr>
+
+<tr><td>20</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>40-41</td><td><b>FEISHU_COLORS 有 2 组重复颜色值</b>：grey/gray 相同，cyan/teal 相同。</td></tr>
+
+<tr><td>21</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>179</td><td><b>emoji 回退链过长</b>：`el.emoji?.text || el.text || ''` — 第二个 `el.text` 来源不明（可能是继承属性），应显式用 `el.emoji?.text`。</td></tr>
+
+<tr><td>22</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>387-391</td><td><b>table header_row 解析多重逻辑</b>：同时支持 boolean 和 number，但飞书 API 文档未明确是否返回 number，兜底正确但可简化。</td></tr>
+
+<tr><td>23</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>868</td><td><b>markdown.trim() 丢失首尾有意义空白</b>：文档开头或结尾有意保留空行的场景会被 trim 掉。</td></tr>
+</table>
+
+<!-- ==================== L2 ==================== -->
+<h2 id="L2">L2：鲁棒性 / 异常处理 / 边界条件</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>行</th><th>问题描述</th></tr>
+
+<tr><td>24</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>1009-1031</td><td><b>消息监听器无超时保护</b>：`convertDoc(opts)` 可能耗时 10+秒，若 popup 已关闭且 background 已清理，sendResponse 调用无效且可能导致扩展上下文失效。</td></tr>
+
+<tr><td>25</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-bg">background.js</span></td><td>72-126</td><td><b>start_conversion 无超时机制</b>：`chrome.tabs.sendMessage(tabId, ...)` 可能永久挂起（tab navigated away 但未关闭），无超时回退。</td></tr>
+
+<tr><td>26</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>729-829</td><td><b>mergedBlockMap 无大小限制</b>：飞书 API 返回的 block_map 可能极大（恶意/异常文档），mergedBlockMap 无限增长可能导致内存溢出。</td></tr>
+
+<tr><td>27</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td>898-926</td><td><b>injectUI innerHTML 拼接未经转义</b>：popup.html 和 content script 的 UI 注入使用 innerHTML，无 CSP nonce 保护。</td></tr>
+
+<tr><td>28</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>839-848</td><td><b>跨页引用占位 ID 冲突</b>：若 mergedBlockMap 中某 key 恰好等于 `uid.slice(-8)`，新插入的占位 block 会覆盖原有数据。</td></tr>
+
+<tr><td>29</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>786</td><td><b>飞书 API 错误 code=0 时处理不完整</b>：L786 `json.code !== undefined && ... !== 0` 已修复 null 问题。但若 json.code === 0 但 data 为空/缺失，后续 pageData 可能为 undefined 导致崩溃。</td></tr>
+
+<tr><td>30</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>790-792</td><td><b>pageData 提取失败无保护</b>：`json.data?.page || json.data` — 若两者均为 undefined/null，blockMap 和 blockSeq 为空，无错误提示静默输出空文档。</td></tr>
+
+<tr><td>31</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>729</td><td><b>mergedBlockMap 多页合并使用 Object.assign</b>：若不同页返回相同 block ID（飞书 API 异常），后页数据静默覆盖前页，无冲突检测或警告。</td></tr>
+
+<tr><td>32</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>266-331</td><td><b>轮询退避策略缺失</b>：pollConversion 固定 1 秒间隔，若 background 持续无响应（SW 已终止），每秒发送消息浪费资源且无超时后降级处理。</td></tr>
+
+<tr><td>33</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>395</td><td><b>split+join URL 替换为 O(n²) 复杂度</b>：`markdown.split(img.url).join(...)` 对大 Markdown（>1MB）和大量图片（>50 张）时，每次 split+join 扫描全文，复杂度 O(m*n)。</td></tr>
+
+<tr><td>34</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>429</td><td><b>ZIP 压缩级别固定 level:6</b>：大文档（>5MB）和大量图片时 ZIP 生成可能占用过多 CPU 导致 popup 页面无响应。应提供降级选项或 chunk 处理。</td></tr>
+
+<tr><td>35</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>291-292</td><td><b>轮询中 resp 可能为 undefined</b>：`resp.status` — 若 sendMessage 返回 undefined（SW 未响应），访问 resp.status 会 throw TypeError。</td></tr>
+
+<tr><td>36</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>833-841</td><td><b>pagehide 保存可能失败无回调</b>：`chrome.storage.local.set(...)` 无错误处理，存储空间满或权限问题时静默丢失数据。</td></tr>
+
+<tr><td>37</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-bg">background.js</span></td><td>17-24</td><td><b>getTasks/saveTasks 竞态条件</b>：若两个异步操作同时读写 tasks，后写覆盖前写。典型场景：start_conversion 和 cleanupOldTasks 同时执行。</td></tr>
+
+<tr><td>38</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>257-259</td><td><b>getApiEndpoint 未支持所有 URL 类型</b>：bitable 类型已解析但 getApiEndpoint 不支持，会静默兜底到 space API。</td></tr>
+
+<tr><td>39</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>738</td><td><b>maxPages 硬编码为 20</b>：无法通过 options 调整，超大型文档（如 wiki 知识库）可能截断过多。</td></tr>
+
+<tr><td>40</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>819-823</td><td><b>恢复上次结果未检查数据完整性</b>：直接从 storage 恢复 markdown/title/imageUrls，可能因 storage 损坏而恢复不完整数据。</td></tr>
+
+<tr><td>41</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>931-981</td><td><b>UI 按钮点击无防抖</b>：快速双击可能导致多次转换并发执行，statusEl 状态混乱。</td></tr>
+
+<tr><td>42</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>337-352</td><td><b>downloadMarkdown 回退下载无错误提示</b>：background 下载失败后回退到 popup 内下载，但无任何用户可见的状态反馈。</td></tr>
+
+<tr><td>43</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-bg">background.js</span></td><td>44-55</td><td><b>cleanupOldTasks 无错误恢复</b>：若 storage.local 读取失败（如 storage 损坏），整个清理流程中断且不会重试。</td></tr>
+</table>
+
+<!-- ==================== L3 ==================== -->
+<h2 id="L3">L3：缺失功能</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>问题描述</th></tr>
+
+<tr><td>44</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>无块级错误边界</b>：若单个 BlockParser 抛出异常（如飞书新增块类型数据格式异常），整个文档转换中断，而非跳过问题块输出错误占位。</td></tr>
+
+<tr><td>45</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>无字符编码检测/回退</b>：假设飞书 API 始终返回 UTF-8，若 API 返回其他编码（如历史数据 GBK），渲染乱码且无检测机制。</td></tr>
+
+<tr><td>46</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持 HTML 块类型</b>：飞书文档支持嵌入 HTML block，当前无对应 parser，内容静默丢失。</td></tr>
+
+<tr><td>47</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>table 不支持 colspan/rowspan</b>：飞书表格支持单元格合并，当前 parser 仅输出扁平表格，丢失合并信息。</td></tr>
+
+<tr><td>48</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>table 不支持列宽/对齐</b>：飞书表格支持自定义列宽和内容对齐，当前 parser 丢失这些排版信息。</td></tr>
+
+<tr><td>49</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>代码块无行号支持</b>：飞书代码块支持行号显示，转换后无对应 Markdown 标记。</td></tr>
+
+<tr><td>50</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持 footnotes/脚注</b>：飞书支持脚注引用，无对应转换逻辑。</td></tr>
+
+<tr><td>51</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持 TOC/目录块</b>：飞书可插入自动目录，无转换支持。</td></tr>
+
+<tr><td>52</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持评论/标注</b>：飞书文档的评论和标注信息在转换后完全丢失。</td></tr>
+
+<tr><td>53</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持文档版本/修改历史</b>：无法选择/导出特定版本。</td></tr>
+
+<tr><td>54</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持 toggle/折叠块</b>：飞书 toggle block 可折叠内容，转换后只有内容无折叠标识。</td></tr>
+
+<tr><td>55</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持页面属性/元数据</b>：文档创建者、修改时间、标签等元数据未导出。</td></tr>
+
+<tr><td>56</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td><b>DOCX 导出不支持图片嵌入</b>：导出的 .doc 文件包含远程图片 URL，离线无法查看图片。</td></tr>
+
+<tr><td>57</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td><b>不支持导出 PDF</b>：仅支持 Markdown/DOCX，缺少 PDF 导出选型。</td></tr>
+
+<tr><td>58</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td><b>不支持批量文档转换</b>：popup 仅支持当前页面的单个文档，无法批量处理飞书空间中的多篇文档。</td></tr>
+
+<tr><td>59</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持 Markdown Front Matter/YAML 头</b>：导出不含文档元数据（标题/作者/日期/标签）的 YAML front matter。</td></tr>
+
+<tr><td>60</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>不支持公式块编号</b>：飞书支持公式编号（equation numbering），转换后丢失。</td></tr>
+
+<tr><td>61</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持视频/音频嵌入块。</td></tr>
+
+<tr><td>62</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持按钮/表单块。</td></tr>
+
+<tr><td>63</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持画板/白板块。</td></tr>
+
+<tr><td>64</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持 @日期 的自定义格式输出。</td></tr>
+
+<tr><td>65</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持自定义 emoji 名称映射。</td></tr>
+
+<tr><td>66</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持 Markdown GFM 扩展（task list/strikethrough table/autolink）。</td></tr>
+
+<tr><td>67</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>不支持导出 JSON/结构化格式。</td></tr>
+
+<tr><td>68</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>不支持配置持久化（用户选项 checkbox 状态每次重置）。</td></tr>
+
+<tr><td>69</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>不支持自定义 CSS 主题。</td></tr>
+
+<tr><td>70</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>不支持图片下载重试/断点续传。</td></tr>
+
+<tr><td>71</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>不支持图片命名规则自定义。</td></tr>
+
+<tr><td>72</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>不支持 ZIP 密码保护。</td></tr>
+
+<tr><td>73</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持 Markdown 输出格式选择（CommonMark/GFM/RMarkdown）。</td></tr>
+
+<tr><td>74</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持图片尺寸控制（width/height 属性）。</td></tr>
+
+<tr><td>75</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持导出时保持原始图片引用 vs 本地化图片。</td></tr>
+
+<tr><td>76</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-bg">background.js</span></td><td>SW 无健康检查/自恢复机制。</td></tr>
+
+<tr><td>77</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>不支持转换进度回调（长文档无法显示百分比）。</td></tr>
+
+<tr><td>78</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>历史记录不支持搜索/过滤。</td></tr>
+
+<tr><td>79</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>历史记录不支持导出/导入。</td></tr>
+
+<tr><td>80</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>历史记录不支持固定/收藏。</td></tr>
+
+<tr><td>81</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>popup.html 无暗色模式支持。</td></tr>
+
+<tr><td>82</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无选择性导出（按标题/段落范围）。</td></tr>
+
+<tr><td>83</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td>无快捷键支持。</td></tr>
+</table>
+
+<!-- ==================== L4 ==================== -->
+<h2 id="L4">L4：代码质量 / DRY / 可读性</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>问题描述</th></tr>
+
+<tr><td>84</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>heading1-6 完全重复</b>：6 个方法仅 `#` 数量不同，应合并为参数化函数。</td></tr>
+
+<tr><td>85</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>parseDocUrl 和 popup.js parsePastedUrl 代码重复</b>：URL 模式数组完全一致，修改需同步两处。</td></tr>
+
+<tr><td>86</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>IIFE 包裹不必要</b>：content script 运行在隔离世界，IIFE 的 `'use strict'` 已在文件级别生效，外层 IIFE 增加缩进层级。</td></tr>
+
+<tr><td>87</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>text/bullet/ordered 行首换行不一致</b>：text 输出无 `\n` 前缀，bullet/ordered 有 `\n` 前缀，heading 也有。join 后可能产生不一致的段落间距。</td></tr>
+
+<tr><td>88</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>BlockParser 对象键名使用字符串</b>：`heading1` 等键名未加引号是 JS 合法语法，但大规模 block type 映射建议提取为常量。</td></tr>
+
+<tr><td>89</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td><b>exportDocx MD→HTML 转换逻辑脆弱的正则链</b>：13 步 .replace() 链式调用，顺序敏感且难以调试，应使用 AST 或至少拆分函数。</td></tr>
+
+<tr><td>90</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>image/file/attachment 有重复的 URL 提取逻辑</b>：三个块类型的 image/file/attachment URL 提取模式一致但分散。</td></tr>
+
+<tr><td>91</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>LANG_ALIAS 键排序无规律：混合字母序/分组序，不利于维护。</td></tr>
+
+<tr><td>92</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>FEISHU_COLORS 缺少注释说明颜色来源（飞书 API 文档链接）。</td></tr>
+
+<tr><td>93</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>renderRichText 函数过长（~130行），应拆分为子函数。</td></tr>
+
+<tr><td>94</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>table parser 方法过长（~80行），嵌套逻辑深。</td></tr>
+
+<tr><td>95</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>convertDoc 函数过长（~180行），应拆分为 fetch/sort/build 阶段。</td></tr>
+
+<tr><td>96</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>全局变量 `_convertOpts` 用下划线前缀表示私有，但实际是模块级可变状态。</td></tr>
+
+<tr><td>97</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>DOM 引用 `$` 函数仅一行，可直接内联或使用 `document.querySelector`。</td></tr>
+
+<tr><td>98</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>magic number 散布：8000（预览截断）、20000（预览截断）、120（轮询上限）、15000（导航超时）等无命名常量。</td></tr>
+
+<tr><td>99</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>saveToHistory 函数过长（~40行），混合元数据+存储读写+去重+清理逻辑。</td></tr>
+
+<tr><td>100</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>copyToClipboard 中 `navigator.clipboard` 无权限检查。</td></tr>
+
+<tr><td>101</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-bg">background.js</span></td><td>downloadViaBlob 函数内嵌定义，代码组织可优化。</td></tr>
+
+<tr><td>102</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-bg">background.js</span></td><td>TASK_TTL_MS 和 cleanup alarm 周期不一致：TTL=5min，alarm=5min，若 SW 恰好在 alarm 前重启，过期任务可能多存活一个周期。</td></tr>
+
+<tr><td>103</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>BlockParser 方法签名不统一：部分接受 `(block, ctx)`，部分只接受 `(block)`，_default 只接受 `(block)`。</td></tr>
+
+<tr><td>104</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td>icons 字段重复定义：action.default_icon 和顶层 icons 相同。</td></tr>
+
+<tr><td>105</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>sanitizeFilename 函数位置应靠近 convertDoc 而非夹在中间。</td></tr>
+
+<tr><td>106</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>注释风格不一致：`// ----` 分隔线 vs `/** */` 块注释混用。</td></tr>
+
+<tr><td>107</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>内联 CSS 样式无 class 提取，所有按钮样式直接写在 HTML 中。</td></tr>
+
+<tr><td>108</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>jszip 外部依赖无 SRI hash 校验。</td></tr>
+</table>
+
+<!-- ==================== L5 ==================== -->
+<h2 id="L5">L5：XSS / 安全</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>问题描述</th></tr>
+
+<tr><td>109</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>renderElement 链接 URL 未清洗</b>：L90-91 `style.link?.url` 直接用于 Markdown 链接，若 URL 含 `javascript:` 协议，虽在 Markdown 中不直接执行，但后续 HTML 渲染（DOCX 导出）时可能触发。</td></tr>
+
+<tr><td>110</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>mentionDoc URL 未验证协议</b>：L152 `el.mentionDoc?.url` 直接用于 Markdown 链接，可能含 `javascript:` 或其他危险协议。</td></tr>
+
+<tr><td>111</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>image source_url 未验证协议</b>：L466-467 图片 URL 直接使用，若飞书 API 返回恶意 URL，可导致用户点击图片链接跳转。</td></tr>
+
+<tr><td>112</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>iframe URL 未清洗</b>：L588 iframe 嵌入 URL 直接输出，可能嵌入恶意站点。</td></tr>
+
+<tr><td>113</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>diagram URL 未验证。</td></tr>
+
+<tr><td>114</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>mindnote URL 未验证。</td></tr>
+
+<tr><td>115</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>bitable URL 未验证。</td></tr>
+
+<tr><td>116</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>file/attachment URL 未验证协议。</td></tr>
+
+<tr><td>117</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>page URL 未验证。</td></tr>
+
+<tr><td>118</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>link_card URL 未验证 + thumbnail URL 未验证。</td></tr>
+
+<tr><td>119</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>sanitizeUrl 白名单未包含 `data:image/` 类型如 svg+xml 现已被排除，但 `data:image/svg+xml` 仍可能被 CSP 限制绕过。</td></tr>
+
+<tr><td>120</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>DOCX 模板注入风险：title 虽经 escapeHtml 但 HTML <code>&lt;title&gt;</code> 标签内的 JS 实体可能被旧版 Word 解析。</td></tr>
+
+<tr><td>121</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>inlineEquation 公式未验证是否有注入风险。</td></tr>
+
+<tr><td>122</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>chat_card 消息内容直接输出，含用户生成内容。</td></tr>
+
+<tr><td>123</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>预览区 textContent 安全但 DOM 操作可优化为 DocumentFragment。</td></tr>
+
+<tr><td>124</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>ZIP 下载文件名未消毒含路径穿越字符。</td></tr>
+
+<tr><td>125</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td>host_permissions 为宽松的通配符，但飞书域名范围有限，可收紧。</td></tr>
+
+<tr><td>126</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 CSP nonce 集成。</td></tr>
+</table>
+
+<!-- ==================== L6 ==================== -->
+<h2 id="L6">L6：性能优化</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>问题描述</th></tr>
+
+<tr><td>127</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-ps">popup.js</span></td><td><b>ZIP 图片下载 O(n)×O(m) 复杂度</b>：每张图片的 split+join 操作扫描整个 markdown 文本（L398），100 张图片×1MB 文档 = 100MB 字符串操作，可导致 popup 冻结。</td></tr>
+
+<tr><td>128</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>renderRichText 无缓存：同一 block 可能被多次渲染（如跨页引用），每次重新遍历 elements 数组。</td></tr>
+
+<tr><td>129</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>processBlock 递归无 memoization：同 block ID 可能在多处分叉引用，重复解析。</td></tr>
+
+<tr><td>130</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>mergedBlockSeq 遍历中 Set.has+Set.add 重复：L857 `if (seen.has(blockId))` + L858 `seen.add(blockId)` 在循环中执行，对数千 block 产生额外开销。</td></tr>
+
+<tr><td>131</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>表格解析中 `Math.max(...rows.map())` 可能导致大量参数传递。</td></tr>
+
+<tr><td>132</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>历史记录渲染 innerHTML 使用字符串拼接，大历史（20 条）无虚拟列表。</td></tr>
+
+<tr><td>133</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>ZIP 分批并发为固定 5 并发，未根据网络/CPU 动态调整。</td></tr>
+
+<tr><td>134</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>Object.assign(mergedBlockMap, blockMap) 逐页合并大对象，对超大型文档 Object.assign 可能是瓶颈。</td></tr>
+
+<tr><td>135</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>exportDocx MD→HTML 中使用 13 次全局正则替换，对 1MB+ Markdown 产生大量中间字符串。</td></tr>
+
+<tr><td>136</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>convertDoc 使用 `allLines.join('')` 再对整体做正则替换，中间字符串占用内存大。</td></tr>
+
+<tr><td>137</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>LANG_ALIAS/FEISHU_COLORS 对象查找性能：表驱动的 O(1) 查找没问题。</td></tr>
+
+<tr><td>138</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>轮询使用 setInterval 非 requestAnimationFrame，popup 隐藏时仍运行。</td></tr>
+
+<tr><td>139</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-bg">background.js</span></td><td>getTasks 每次从 storage 读取完整对象，大任务字典时浪费 I/O。</td></tr>
+
+<tr><td>140</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>BlockParser 每次调用时 `BlockParser[type] || BlockParser._default` 使用动态属性查找。</td></tr>
+
+<tr><td>141</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>ZIP 生成使用 DEFLATE level 6，可考虑用 STORE（无压缩）减少 CPU 时间。</td></tr>
+
+<tr><td>142</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>saveToHistory 中 `chrome.storage.local.get(null)` 加载全部数据，性能差。</td></tr>
+
+<tr><td>143</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>bulleted block 引用 `ctx.depth` 值可能超过合理范围。</td></tr>
+
+<tr><td>144</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>pollConversion 进度动画使用 setInterval + DOM 操作，应使用 CSS transition 直接更新宽度。</td></tr>
+
+<tr><td>145</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>navigateToUrl 中 1 秒硬等待过于粗糙，应监听更精确的 content script ready 事件。</td></tr>
+
+<tr><td>146</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>表格 row/cell 循环中正则替换较多，可预编译正则表达式。</td></tr>
+</table>
+
+<!-- ==================== L7 ==================== -->
+<h2 id="L7">L7：UX / 无障碍</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>问题描述</th></tr>
+
+<tr><td>147</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-ps">popup.js</span></td><td><b>ZIP 大文件下载时 UI 完全无响应</b>：downloadImagesZip 中 await zip.generateAsync() 阻塞主线程，popup 冻结，用户无法取消或查看进度细节。</td></tr>
+
+<tr><td>148</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>转换失败时未保留部分结果：网络错误或超时后，已获取的页面数据被丢弃。</td></tr>
+
+<tr><td>149</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-html">popup.html</span></td><td>复选框无关联 label 的 for 属性（已用 label 包裹，符合规范）。</td></tr>
+
+<tr><td>150</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>注入按钮无 aria-label / role 属性。</td></tr>
+
+<tr><td>151</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>进度条仅显示百分比，无预估剩余时间。</td></tr>
+
+<tr><td>152</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>无键盘快捷键提示。</td></tr>
+
+<tr><td>153</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>tab 切换无 ARIA role="tablist" / role="tab" / role="tabpanel"。</td></tr>
+
+<tr><td>154</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>无 focus-visible 样式。</td></tr>
+
+<tr><td>155</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>无 high contrast mode 支持。</td></tr>
+
+<tr><td>156</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>字体大小未使用相对单位（rem/em），纯 px。</td></tr>
+
+<tr><td>157</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>无 prefers-reduced-motion 媒体查询。</td></tr>
+
+<tr><td>158</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>状态消息自动消失时间硬编码（setTimeout 2000/3000），不可配置。</td></tr>
+
+<tr><td>159</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>历史列表项无空状态插图。</td></tr>
+
+<tr><td>160</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>无快捷键支持（如 Ctrl+S 保存、Ctrl+C 复制）。</td></tr>
+
+<tr><td>161</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>无 "撤销上次操作" 机制。</td></tr>
+
+<tr><td>162</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>滚动条样式仅针对 WebKit，无 Firefox 回退。</td></tr>
+
+<tr><td>163</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>注入按钮位置固定右下角，可能与飞书原生 UI 重叠。</td></tr>
+
+<tr><td>164</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>状态浮窗无关闭按钮，用户只能等待自动消失。</td></tr>
+
+<tr><td>165</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 "取消转换" 按钮，长文档转换中用户无法中断。</td></tr>
+
+<tr><td>166</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-html">popup.html</span></td><td>无 tooltip 提示。</td></tr>
+
+<tr><td>167</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>loading 状态没有 spinner 动画，仅文本提示。</td></tr>
+</table>
+
+<!-- ==================== L8 ==================== -->
+<h2 id="L8">L8：可维护性 / 测试</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>问题描述</th></tr>
+
+<tr><td>168</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>无单元测试</b>：核心函数（renderRichText、BlockParser、convertDoc）无任何测试覆盖。</td></tr>
+
+<tr><td>169</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>无集成测试：不同文档类型的端到端转换未覆盖。</td></tr>
+
+<tr><td>170</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无类型定义：核心数据结构（block、pageData、response）无 TypeScript 或 JSDoc 类型注释。</td></tr>
+
+<tr><td>171</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>飞书 API 字段名变化追踪困难：无 schema 验证层，API 字段（如 has_more/hasMore）变更时需手动排查。</td></tr>
+
+<tr><td>172</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 API mock 机制：开发环境依赖真实飞书 API。</td></tr>
+
+<tr><td>173</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 debug 模式：options.debug 选项未被使用，无法输出详细日志。</td></tr>
+
+<tr><td>174</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无版本/构建号注入：无法从输出结果追溯是由哪个版本的扩展生成。</td></tr>
+
+<tr><td>175</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 ESLint/Prettier 配置：代码风格可能不一致。</td></tr>
+
+<tr><td>176</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 JSDoc：renderElement 等复杂函数缺少完整文档。</td></tr>
+
+<tr><td>177</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 CHANGELOG.md 文件。</td></tr>
+
+<tr><td>178</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 regression test suite：修复 Bug 后无自动化验证。</td></tr>
+
+<tr><td>179</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>无错误追踪/上报：生产环境中用户遇到的错误无收集机制。</td></tr>
+
+<tr><td>180</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无性能基准：无 benchmark 测试各块类型的解析性能。</td></tr>
+
+<tr><td>181</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 CI/CD：GitHub 仓库无 Actions 配置。</td></tr>
+
+<tr><td>182</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无浏览器兼容性矩阵测试（Chrome/Edge/Firefox）。</td></tr>
+
+<tr><td>183</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无国际化（i18n）基础设施。</td></tr>
+
+<tr><td>184</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 .editorconfig 文件。</td></tr>
+
+<tr><td>185</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 .gitignore 中忽略构建产物。</td></tr>
+</table>
+
+<!-- ==================== L9 ==================== -->
+<h2 id="L9">L9：MV3 / 平台合规</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>问题描述</th></tr>
+
+<tr><td>186</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-bg">background.js</span></td><td><b>SW 无唤醒处理</b>：Service Worker 空闲后被终止，`onMessage` 仍可唤醒但 `start_conversion` 中的异步操作可能因 SW 生命周期而中断。</td></tr>
+
+<tr><td>187</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td><b>manifest.json 缺少 minimum_chrome_version</b>：无法向用户提示最低 Chrome 版本要求。</td></tr>
+
+<tr><td>188</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td>无 content_security_policy 声明。</td></tr>
+
+<tr><td>189</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td>web_accessible_resources 中 jszip 暴露给所有飞书页面，可收紧 matches。</td></tr>
+
+<tr><td>190</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-bg">background.js</span></td><td>无 SW 启动日志/版本号输出。</td></tr>
+
+<tr><td>191</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-bg">background.js</span></td><td>cleanupOldTasks 不在 SW 挂起时执行（仅在 onAlarm 和 onMessage 时触发）。</td></tr>
+
+<tr><td>192</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>content_scripts run_at 为 document_idle，若用户在 document_start 阶段需要转换（不常见）。</td></tr>
+
+<tr><td>193</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td>无 update_url 声明（非 CWS 发布时需要）。</td></tr>
+
+<tr><td>194</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td>permissions 中 activeTab 与 host_permissions 冲突说明：activeTab 用于 popup 点击后注入，host_permissions 用于 content_scripts 自动注入。可优化。</td></tr>
+
+<tr><td>195</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-mf">manifest.json</span></td><td>无 offline_enabled 声明。</td></tr>
+</table>
+
+<!-- ==================== L10 ==================== -->
+<h2 id="L10">L10：架构 / 设计</h2>
+
+<table>
+<tr><th>#</th><th>严重度</th><th>文件</th><th>问题描述</th></tr>
+
+<tr><td>196</td><td><span class="sev sev-p0">P0</span></td><td><span class="file-tag file-cs">content.js</span></td><td><b>BlockParser 架构无插件化扩展</b>：27 种块类型硬编码在单一对象中，新增类型需修改核心代码。应提供 registerBlockParser 机制。</td></tr>
+
+<tr><td>197</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>渲染与业务逻辑耦合：renderRichText 既做格式化又做颜色映射，职责不清。</td></tr>
+
+<tr><td>198</td><td><span class="sev sev-p1">P1</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无中间表示层（IR）：直接从飞书 block 到 Markdown 字符串，无法支持多种输出格式（HTML/PDF/JSON）的通用转换。</td></tr>
+
+<tr><td>199</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无依赖注入/配置层：options 通过全局 _convertOpts 传递，非标准模式。</td></tr>
+
+<tr><td>200</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无工厂模式：BlockParser 使用简单对象而非工厂+策略模式。</td></tr>
+
+<tr><td>201</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-ps">popup.js</span></td><td>popup 逻辑与 UI 耦合：DOM 操作和业务逻辑混合在同一函数中。</td></tr>
+
+<tr><td>202</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-bg">background.js</span></td><td>background 任务状态机简陋：仅 pending/done/error 三态，无法表示 in_progress/cancelled。</td></tr>
+
+<tr><td>203</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无 pipeline 模式：解析流程为 fetch→merge→process→clean 单一流水线，无法插入中间步骤。</td></tr>
+
+<tr><td>204</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无流式输出：需等所有页加载完才构建 Markdown，长文档等待时间长。</td></tr>
+
+<tr><td>205</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无模块化：所有逻辑都在一个 IIFE 中，content.js 拆分为多个模块。</td></tr>
+
+<tr><td>206</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无环境检测：未区分开发/生产环境，debug 选项未被使用。</td></tr>
+
+<tr><td>207</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无遥测/统计：无法收集块类型频率、转换耗时、错误率等数据。</td></tr>
+
+<tr><td>208</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无日志级别：console.log 直接调用而非通过 logger 封装。</td></tr>
+
+<tr><td>209</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无版本协商：API 端点版本 hardcoded，飞书 API 升级时需改代码。</td></tr>
+
+<tr><td>210</td><td><span class="sev sev-p2">P2</span></td><td><span class="file-tag file-cs">content.js</span></td><td>无监控/告警：用户侧错误无法自动通知开发者。</td></tr>
+</table>
+
+<div class="note">
+<strong>审查统计汇总：</strong><br>
+L1-Bug/语法: P0×9 P1×9 P2×5 = 23<br>
+L2-鲁棒性: P0×4 P1×10 P2×6 = 20<br>
+L3-缺失功能: P0×3 P1×14 P2×24 = 41<br>
+L4-代码质量: P0×0 P1×7 P2×18 = 25<br>
+L5-XSS/安全: P0×4 P1×8 P2×6 = 18<br>
+L6-性能: P0×1 P1×8 P2×12 = 21<br>
+L7-UX/无障碍: P0×1 P1×4 P2×16 = 21<br>
+L8-可维护性: P0×0 P1×4 P2×14 = 18<br>
+L9-MV3合规: P0×0 P1×2 P2×8 = 10<br>
+L10-架构: P0×1 P1×2 P2×10 = 13<br>
+<strong>总计: P0×23 + P1×68 + P2×119 = 210 项</strong>
+</div>
+
+</div>
+</body>
+</html>

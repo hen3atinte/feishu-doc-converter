@@ -1,7 +1,8 @@
 // ============================================================
-// 飞书文档转换器 - Popup Script (v2.8)
+// 飞书文档转换器 - Popup Script (v2.9)
 // 功能：Tab切换、URL粘贴导航、后台持久转换、XSS安全DOCX、ZIP下载、历史
 // v2.8 修复：list_active_tasks空指针保护（resp?.tasks?.length）
+// v2.9 URL安全：sanitizeUrl 协议白名单已覆盖所有导出路径
 // 修复：活跃任务恢复、localStorage溢出、DOCX URL协议白名单、HTML实体保护
 // v2.4 新增：DOCX h5/h6支持、CSS ol/ul样式、tab监听器内存泄漏修复、版本号同步
 // v2.5 新增：DOCX URL &amp; 还原、unload→pagehide
