@@ -2,18 +2,19 @@
   "manifest_version": 3,
   "name": "飞书文档转换器",
   "version": "2.9",
-  "description": "飞书文档转Markdown — v2.9 URL安全清洗+P0×5修复(代码块保护/depth/表格内联代码/纯文本扩展/循环检测)",
+  "description": "飞书文档转Markdown — v2.9 P0鲁棒性修复(消息超时/block上限/空数据检测/占位冲突)+P1错误恢复(存储降级/下载反馈)",
   "permissions": [
-    "activeTab",
-    "scripting",
-    "downloads",
     "storage",
+    "downloads",
+    "activeTab",
     "alarms"
   ],
   "host_permissions": [
-    "https://*.feishu.cn/*",
-    "https://*.larksuite.com/*"
+    "https://*.feishu.cn/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -24,21 +25,9 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://*.feishu.cn/*",
-        "https://*.larksuite.com/*"
-      ],
+      "matches": ["https://*.feishu.cn/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
-    }
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": ["jszip.min.js"],
-      "matches": ["https://*.feishu.cn/*", "https://*.larksuite.com/*"]
     }
   ],
   "icons": {
