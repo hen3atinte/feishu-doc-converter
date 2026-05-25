@@ -265,17 +265,18 @@
   }
 
   async function pollConversion() {
-    if (pollTimer) clearInterval(pollTimer);
+    if (pollTimer) clearTimeout(pollTimer);
 
     const maxPolls = 120; // 最多轮询 2 分钟
     let polls = 0;
     let lastProgress = 10;
+    let failCount = 0;
+    const baseDelay = 1000;
 
     return new Promise((resolve, reject) => {
-      pollTimer = setInterval(async () => {
+      const poll = () => {
         polls++;
         if (polls > maxPolls) {
-          clearInterval(pollTimer);
           pollTimer = null;
           showStatus('❌ 转换超时', 'error');
           el.btnConvert.textContent = '🔄 重试';
@@ -289,14 +290,21 @@
         lastProgress = Math.min(lastProgress + 0.5, 90);
         setProgress(lastProgress, `轮询中... (${polls}s)`);
 
-        try {
-          const resp = await chrome.runtime.sendMessage({
-            action: 'get_status',
-            taskId: currentTaskId,
-          });
+        chrome.runtime.sendMessage({
+          action: 'get_status',
+          taskId: currentTaskId,
+        }).then(resp => {
+          // SW 未响应或返回 undefined → 退避
+          if (!resp) {
+            failCount++;
+            const delay = Math.min(baseDelay * (1 + failCount * 0.5), 5000);
+            pollTimer = setTimeout(poll, delay);
+            return;
+          }
+
+          failCount = 0; // 成功响应，重置失败计数
 
           if (resp.status === 'done') {
-            clearInterval(pollTimer);
             pollTimer = null;
             currentMarkdown = resp.result.markdown;
             currentTitle = resp.result.title;
@@ -316,25 +324,32 @@
             saveToHistory();
             resolve();
           } else if (resp.status === 'error') {
-            clearInterval(pollTimer);
             pollTimer = null;
             showStatus(`❌ ${resp.error}`, 'error');
             el.btnConvert.textContent = '🔄 重试';
             el.btnConvert.disabled = false;
             hideProgress();
             reject(new Error(resp.error));
+          } else {
+            // 仍在处理中，正常间隔轮询
+            pollTimer = setTimeout(poll, baseDelay);
           }
-        } catch (err) {
-          // background 可能已重启，忽略单次失败
-        }
-      }, 1000);
+        }).catch(() => {
+          // background 可能已重启，退避
+          failCount++;
+          const delay = Math.min(baseDelay * (1 + failCount * 0.5), 5000);
+          pollTimer = setTimeout(poll, delay);
+        });
+      };
+
+      poll();
     });
   }
 
   // ---- 下载 Markdown ----
   function downloadMarkdown() {
     if (!currentMarkdown) return;
-    const filename = `${currentTitle}.md`;
+    const filename = `${sanitizeFilename(currentTitle)}.md`;
     chrome.runtime.sendMessage({
       action: 'download_file',
       filename,
@@ -380,7 +395,10 @@
         const results = await Promise.allSettled(
           batch.map(async (img, idx) => {
             try {
-              const resp = await fetch(img.url, { mode: 'cors' });
+              const ctrl = new AbortController();
+              const timer = setTimeout(() => ctrl.abort(), 15000);
+              const resp = await fetch(img.url, { mode: 'cors', signal: ctrl.signal });
+              clearTimeout(timer);
               if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
               const blob = await resp.blob();
 
@@ -435,7 +453,7 @@
       const zipUrl = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = zipUrl;
-      a.download = `${currentTitle}_with_images.zip`;
+      a.download = `${sanitizeFilename(currentTitle)}_with_images.zip`;
       a.click();
       URL.revokeObjectURL(zipUrl);
 
@@ -477,6 +495,17 @@
     }
 
     return trimmed;
+  }
+
+  function sanitizeFilename(name) {
+    if (!name) return 'untitled';
+    return name
+      .replace(/[\\/:*?"<>|]/g, '_')
+      .replace(/[\x00-\x1f\x7f]/g, '')
+      .replace(/\.\./g, '_')
+      .replace(/^\.+/, '_')
+      .trim()
+      .substring(0, 200) || 'untitled';
   }
 
   function exportDocx() {
@@ -590,7 +619,7 @@ ${html}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${currentTitle}.doc`;
+    a.download = `${sanitizeFilename(currentTitle)}.doc`;
     a.click();
     URL.revokeObjectURL(url);
   }

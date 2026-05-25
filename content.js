@@ -86,43 +86,59 @@
         let text = el.textRun?.text || el.text || '';
         const style = el.textRun?.textStyle || el.textStyle || {};
 
-        // 链接优先（可能是带链接的文本）
-        if (style.link?.url && _convertOpts.links !== false) {
-          text = `[${text}](${sanitizeUrl(style.link.url)})`;
-        }
-
-        // 行内代码（Markdown 不支持反引号内嵌粗体/斜体，使用 HTML 保留格式）
+        // 行内代码：内联样式包裹在 <code> 标签内，避免 Markdown 语义冲突
         if (style.inlineCode) {
-          if (style.bold && style.italic) {
-            text = `<code><em><strong>${text}</strong></em></code>`;
-          } else if (style.bold) {
-            text = `<code><strong>${text}</strong></code>`;
-          } else if (style.italic) {
-            text = `<code><em>${text}</em></code>`;
-          } else {
-            text = `\`${text}\``;
-          }
-        }
-        // 粗体+斜体组合（Markdown: ***text***）
-        else if (style.bold && style.italic) {
-          text = `***${text}***`;
-        }
-        // 粗体
-        else if (style.bold) {
-          text = `**${text}**`;
-        }
-        // 斜体
-        else if (style.italic) {
-          text = `*${text}*`;
-        }
+          let inner = text;
 
-        // 删除线（可与粗体/斜体叠加）
-        if (style.strikethrough) {
-          text = `~~${text}~~`;
-        }
-        // 下划线（HTML 标签，Markdown 不支持原生下划线）
-        if (style.underline) {
-          text = `<u>${text}</u>`;
+          // 粗体+斜体（HTML 保证 Markdown 代码块内也可展示格式）
+          if (style.bold && style.italic) {
+            inner = `<em><strong>${inner}</strong></em>`;
+          } else if (style.bold) {
+            inner = `<strong>${inner}</strong>`;
+          } else if (style.italic) {
+            inner = `<em>${inner}</em>`;
+          }
+
+          // 删除线
+          if (style.strikethrough) {
+            inner = `<s>${inner}</s>`;
+          }
+
+          // 下划线
+          if (style.underline) {
+            inner = `<u>${inner}</u>`;
+          }
+
+          text = `<code>${inner}</code>`;
+
+          // 不处理链接（inline code 为字面量，链接无意义）
+        } else {
+          // 链接优先（可能是带链接的文本）
+          if (style.link?.url && _convertOpts.links !== false) {
+            text = `[${text}](${sanitizeUrl(style.link.url)})`;
+          }
+
+          // 粗体+斜体组合（Markdown: ***text***）
+          if (style.bold && style.italic) {
+            text = `***${text}***`;
+          }
+          // 粗体
+          else if (style.bold) {
+            text = `**${text}**`;
+          }
+          // 斜体
+          else if (style.italic) {
+            text = `*${text}*`;
+          }
+
+          // 删除线（可与粗体/斜体叠加）
+          if (style.strikethrough) {
+            text = `~~${text}~~`;
+          }
+          // 下划线（HTML 标签，Markdown 不支持原生下划线）
+          if (style.underline) {
+            text = `<u>${text}</u>`;
+          }
         }
 
         // 文字颜色（非默认颜色时添加 emoji 标注）
@@ -371,7 +387,7 @@
       if (emoji) parts.push(emoji);
       if (color) parts.push(`[${color.toUpperCase()}]`);
       const header = parts.length > 0 ? `**${parts.join(' ')}**` : '**Note**';
-      return t ? `\n> ${header}\n> ${t}\n` : '';
+      return t ? `\n> ${header}\n${t.split('\n').map(l => l ? `> ${l}` : '>').join('\n')}\n` : '';
     },
 
     // --- 分割线 ---
@@ -758,6 +774,7 @@
 
   async function convertDoc(options) {
     _convertOpts = options;
+    try {
 
     const docInfo = parseDocUrl();
     if (docInfo.error) {
@@ -940,6 +957,9 @@
       unresolvedRefs: unresolvedCount,
       truncated,
     };
+    } finally {
+      _convertOpts = null;
+    }
   }
 
   // ---- 注入到页面：按钮 + 浮窗 ----

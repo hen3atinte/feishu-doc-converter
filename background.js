@@ -13,6 +13,16 @@
 const STORAGE_KEY = 'conv_tasks';
 const TASK_TTL_MS = 5 * 60 * 1000; // 任务过期时间：5分钟
 
+// ---- 任务存储互斥锁（防止 get→modify→save 竞态） ----
+let storageLock = Promise.resolve();
+
+function withLock(fn) {
+  const prev = storageLock;
+  let release;
+  storageLock = new Promise(resolve => { release = resolve; });
+  return prev.then(() => fn().finally(release));
+}
+
 // ---- 任务存储（chrome.storage.local 持久化） ----
 
 async function getTasks() {
@@ -30,29 +40,35 @@ async function getTask(taskId) {
 }
 
 async function setTask(taskId, task) {
-  const tasks = await getTasks();
-  tasks[taskId] = task;
-  await saveTasks(tasks);
+  return withLock(async () => {
+    const tasks = await getTasks();
+    tasks[taskId] = task;
+    await saveTasks(tasks);
+  });
 }
 
 async function deleteTask(taskId) {
-  const tasks = await getTasks();
-  delete tasks[taskId];
-  await saveTasks(tasks);
+  return withLock(async () => {
+    const tasks = await getTasks();
+    delete tasks[taskId];
+    await saveTasks(tasks);
+  });
 }
 
 // 清理过期任务
 async function cleanupOldTasks() {
-  const tasks = await getTasks();
-  const now = Date.now();
-  let changed = false;
-  for (const [id, task] of Object.entries(tasks)) {
-    if (now - task.timestamp > TASK_TTL_MS) {
-      delete tasks[id];
-      changed = true;
+  return withLock(async () => {
+    const tasks = await getTasks();
+    const now = Date.now();
+    let changed = false;
+    for (const [id, task] of Object.entries(tasks)) {
+      if (now - task.timestamp > TASK_TTL_MS) {
+        delete tasks[id];
+        changed = true;
+      }
     }
-  }
-  if (changed) await saveTasks(tasks);
+    if (changed) await saveTasks(tasks);
+  });
 }
 
 // 列出所有活跃任务（供 popup 恢复用）
