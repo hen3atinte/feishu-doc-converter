@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "飞书文档转换器",
-  "version": "2.6",
-  "description": "飞书文档转Markdown — ordered start编号、ZIP全局URL替换、page超限告警、DOCX空行可见化、死代码清理",
+  "version": "2.8",
+  "description": "飞书文档转Markdown — v2.8 10层审查修复: P0×7致命安全/逻辑+XSS修复、API超时、无限递归保护、LANG_ALIAS扩展至50+语言、颜色映射补全",
   "permissions": [
     "activeTab",
     "scripting",

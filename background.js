@@ -1,8 +1,10 @@
 // ============================================================
-// 飞书文档转换器 - Background Service Worker (v2.6)
+// 飞书文档转换器 - Background Service Worker (v2.8)
 // 功能：持久转换（chrome.storage.local 防SW空闲丢失）、状态管理、下载代理
+// v2.8 修复：tabId存在性验证、大文件优先Blob下载（>500KB避免data URI溢出）
 // v2.5 新增：alarm 定时清理过期任务（每5分钟）
 // v2.6：版本号同步
+// v2.7：（无 background.js 变更，版本号同步）
 // ============================================================
 
 'use strict';
@@ -87,6 +89,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       };
       await setTask(taskId, task);
 
+      // 验证 tab 是否存在
+      try {
+        await chrome.tabs.get(tabId);
+      } catch (e) {
+        task.status = 'error';
+        task.error = `标签页已关闭 (tabId=${tabId})`;
+        await setTask(taskId, task);
+        sendResponse({ taskId });
+        return;
+      }
+
       // 向对应 tab 的 content script 发送转换请求
       try {
         const result = await chrome.tabs.sendMessage(tabId, {
@@ -144,17 +157,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const content = request.content || '';
     const mimeType = request.mimeType || 'text/markdown';
 
-    // 使用 data URI
-    const dataUri = `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`;
+    // 大文件(>500KB)优先使用 Blob 方案，避免 data URI 超 Chrome 限制(~2MB)
+    const useBlobFirst = content.length > 500 * 1024;
 
-    chrome.downloads.download({
-      url: dataUri,
-      filename,
-      saveAs: false,
-    }).then(downloadId => {
-      sendResponse({ success: true, downloadId });
-    }).catch(err => {
-      // data URI 可能超长，尝试用 Blob
+    if (!useBlobFirst) {
+      const dataUri = `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`;
+      chrome.downloads.download({
+        url: dataUri,
+        filename,
+        saveAs: false,
+      }).then(downloadId => {
+        sendResponse({ success: true, downloadId });
+      }).catch(err => {
+        // data URI 可能超长，回退 Blob
+        downloadViaBlob();
+      });
+    } else {
+      downloadViaBlob();
+    }
+
+    function downloadViaBlob() {
       try {
         const blob = new Blob([content], { type: mimeType });
         const reader = new FileReader();
@@ -176,7 +198,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       } catch (e) {
         sendResponse({ success: false, error: e.message });
       }
-    });
+    }
 
     return true;
   }

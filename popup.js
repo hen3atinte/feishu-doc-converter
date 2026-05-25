@@ -1,10 +1,12 @@
 // ============================================================
-// 飞书文档转换器 - Popup Script (v2.6)
+// 飞书文档转换器 - Popup Script (v2.8)
 // 功能：Tab切换、URL粘贴导航、后台持久转换、XSS安全DOCX、ZIP下载、历史
+// v2.8 修复：list_active_tasks空指针保护（resp?.tasks?.length）
 // 修复：活跃任务恢复、localStorage溢出、DOCX URL协议白名单、HTML实体保护
 // v2.4 新增：DOCX h5/h6支持、CSS ol/ul样式、tab监听器内存泄漏修复、版本号同步
 // v2.5 新增：DOCX URL &amp; 还原、unload→pagehide
 // v2.6 新增：ZIP replaceAll全局替换、DOCX空行可见化、page超限告警
+// v2.7 新增：DOCX块级间距优化、恢复历史预览同步、ZIP失败URL报告
 // ============================================================
 
 (function () {
@@ -365,6 +367,7 @@
       const zip = new JSZip();
       const imgFolder = zip.folder('images');
       let downloaded = 0;
+      const failedUrls = [];
       let markdown = currentMarkdown;
 
       const maxConcurrent = 5;
@@ -402,7 +405,13 @@
         );
 
         for (const r of results) {
-          if (r.value?.success) downloaded++;
+          if (r.status === 'fulfilled' && r.value?.success) {
+            downloaded++;
+          } else if (r.status === 'fulfilled') {
+            failedUrls.push(r.value?.url || 'unknown');
+          } else {
+            failedUrls.push('(网络错误)');
+          }
         }
 
         setProgress(
@@ -430,7 +439,13 @@
       URL.revokeObjectURL(zipUrl);
 
       currentMarkdown = markdown; // 更新为本地路径版本
-      showStatus(`✅ ZIP 打包完成 — ${downloaded}/${urlList.length} 张图片`, 'success');
+      if (downloaded === 0) {
+        showStatus(`❌ ZIP 打包失败: 所有 ${urlList.length} 张图片下载失败`, 'error');
+      } else if (failedUrls.length > 0) {
+        showStatus(`✅ ZIP 打包完成 — ${downloaded}/${urlList.length} 张 (${failedUrls.length} 张失败)`, 'success');
+      } else {
+        showStatus(`✅ ZIP 打包完成 — ${downloaded}/${urlList.length} 张图片`, 'success');
+      }
     } catch (err) {
       showStatus(`❌ ZIP 打包失败: ${err.message}`, 'error');
     } finally {
@@ -520,6 +535,8 @@
     // 连续空行 → 可见换行（HTML 中 \n 不产生视觉间距）
     html = html.replace(/\n\n+/g, '<br><br>');
     html = html.replace(/\n/g, '');
+    // 移除块级元素间多余的 <br>（p/h1-h6/li 等已有 CSS margin）
+    html = html.replace(/<\/(p|h[1-6]|li|ol|ul|blockquote|pre|hr)><br><br><([a-z])/g, '</$1><$2');
 
     const fullHtml = `<!DOCTYPE html>
 <html>
@@ -709,6 +726,11 @@ ${html}
       currentTitle = h.title;
       currentImageUrls = content.imageUrls || [];
       enableButtons(true);
+      // 如果预览正在显示，刷新内容（否则显示的仍是旧文档）
+      if (el.preview.classList.contains('show')) {
+        el.preview.textContent = currentMarkdown.slice(0, 8000) +
+          (currentMarkdown.length > 8000 ? '\n\n... (内容过长，仅显示前 8000 字符)' : '');
+      }
       showStatus(`✅ 已恢复: ${h.title} (${(h.size / 1024).toFixed(1)} KB)`, 'success');
     } catch (e) {
       showStatus('⚠ 恢复失败: ' + e.message, 'error');
@@ -769,7 +791,7 @@ ${html}
     // 检查是否有活跃的后台转换任务
     try {
       const resp = await chrome.runtime.sendMessage({ action: 'list_active_tasks' });
-      if (resp && resp.tasks && resp.tasks.length > 0) {
+      if (resp?.tasks?.length > 0) {
         // 有活跃任务，恢复轮询
         const activeTask = resp.tasks[0]; // 取第一个活跃任务
         currentTaskId = activeTask.id;

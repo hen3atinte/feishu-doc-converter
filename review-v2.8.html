@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飞书文档转换器 v2.8 10层深度审查报告 — 205项问题</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f6fa;color:#333;line-height:1.6}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:30px 20px;border-radius:12px;margin-bottom:24px}
+.header h1{font-size:24px;margin-bottom:8px}
+.header .meta{font-size:13px;opacity:.8}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:white;border-radius:8px;padding:16px;border-left:4px solid #4A6CF7;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.stat-card .num{font-size:28px;font-weight:700;color:#4A6CF7}
+.stat-card .label{font-size:12px;color:#888;margin-top:4px}
+.stat-card.critical{border-left-color:#E53935}.stat-card.critical .num{color:#E53935}
+.stat-card.major{border-left-color:#FF9800}.stat-card.major .num{color:#FF9800}
+.stat-card.minor{border-left-color:#4CAF50}.stat-card.minor .num{color:#4CAF50}
+
+.layer-nav{background:white;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.layer-nav a{display:inline-block;padding:4px 12px;border-radius:4px;font-size:13px;font-weight:500;color:#4A6CF7;text-decoration:none;background:#f0f4ff;transition:all .15s}
+.layer-nav a:hover{background:#dde3ff}
+.layer-nav a.sev-critical{color:#E53935;background:#ffebee}
+.layer-nav a.sev-major{color:#FF9800;background:#fff3e0}
+
+.layer-section{margin-bottom:32px}
+.layer-title{font-size:18px;font-weight:700;padding:12px 16px;background:white;border-radius:8px 8px 0 0;border-bottom:2px solid #4A6CF7;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.layer-desc{font-size:13px;color:#888;padding:8px 16px;background:white;margin-bottom:0}
+
+.issue-table{width:100%;border-collapse:collapse;background:white;border-radius:0 0 8px 8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:12px}
+.issue-table th{background:#f0f4ff;padding:8px 10px;text-align:left;font-weight:600;position:sticky;top:0;z-index:1;font-size:11px;white-space:nowrap}
+.issue-table td{padding:6px 10px;border-top:1px solid #f0f0f0;vertical-align:top}
+.issue-table tr:hover{background:#fafbff}
+.issue-table .id{width:40px;text-align:center;font-weight:600}
+.issue-table .sev{width:50px;text-align:center}
+.issue-table .file{width:70px}
+.issue-table .loc{width:60px;font-family:monospace;font-size:11px}
+
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700}
+.badge-critical{background:#ffcdd2;color:#c62828}
+.badge-major{background:#ffe0b2;color:#e65100}
+.badge-minor{background:#c8e6c9;color:#1b5e20}
+.badge-info{background:#e3f2fd;color:#0d47a1}
+
+.toc{background:white;border-radius:8px;padding:16px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.toc h3{font-size:16px;margin-bottom:12px}
+.toc ol{padding-left:20px;font-size:13px}
+.toc li{margin-bottom:4px}
+.toc a{color:#4A6CF7;text-decoration:none}
+.toc a:hover{text-decoration:underline}
+
+.file-stats{margin:20px 0}
+.file-stats table{width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden}
+.file-stats th,.file-stats td{padding:8px 12px;text-align:center;font-size:12px}
+.file-stats th{background:#f0f4ff;font-weight:600}
+.file-stats td{border-top:1px solid #f0f0f0}
+.file-stats .fname{text-align:left;font-weight:500}
+
+@media print{.issue-table{font-size:10px}.issue-table td,.issue-table th{padding:4px 6px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+<h1>📊 飞书文档转换器 — v2.8 10层深度审查报告</h1>
+<div class="meta">
+审查日期: 2026-05-25 | 审查范围: content.js (962行) + popup.js (843行) + background.js (195行) + popup.html (195行) | 总行数: 2,195行 | 发现问题: 205项
+</div>
+</div>
+
+<div class="summary">
+<div class="stat-card critical"><div class="num">18</div><div class="label">🔴 致命 Bug (P0)</div></div>
+<div class="stat-card major"><div class="num">47</div><div class="label">🟡 严重问题 (P1)</div></div>
+<div class="stat-card minor"><div class="num">140</div><div class="label">🟢 轻微/改进 (P2)</div></div>
+<div class="stat-card"><div class="num">205</div><div class="label">总计发现问题</div></div>
+<div class="stat-card"><div class="num">10</div><div class="label">审查层级</div></div>
+<div class="stat-card"><div class="num">3</div><div class="label">涉及文件</div></div>
+</div>
+
+<div class="toc">
+<h3>📑 目录</h3>
+<ol>
+<li><a href="#L1">第1层：Bug/逻辑错误 (26项)</a></li>
+<li><a href="#L2">第2层：鲁棒性 (22项)</a></li>
+<li><a href="#L3">第3层：功能缺失 (24项)</a></li>
+<li><a href="#L4">第4层：代码质量 (28项)</a></li>
+<li><a href="#L5">第5层：XSS/安全 (18项)</a></li>
+<li><a href="#L6">第6层：性能 (20项)</a></li>
+<li><a href="#L7">第7层：UX/可访问性 (22项)</a></li>
+<li><a href="#L8">第8层：可维护性 (20项)</a></li>
+<li><a href="#L9">第9层：MV3合规/标准 (15项)</a></li>
+<li><a href="#L10">第10层：架构/设计 (10项)</a></li>
+</ol>
+</div>
+
+<!-- ==================== LAYER 1 ==================== -->
+<div class="layer-section" id="L1">
+<div class="layer-title">🔴 第1层：Bug / 逻辑错误 — 26项</div>
+<div class="layer-desc">影响功能的正确性、数据完整性，或导致不可预期的运行时行为。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">1</td><td class="sev"><span class="badge badge-critical">P0</span></td><td class="file">content.js</td><td class="loc">696-757</td><td><b>page截断误判</b>：while(pageNum&lt;=maxPages)循环处理完maxPages页后pageNum自增到maxPages+1，但截断判断只看pageNum>maxPages，导致恰好maxPages页却有下一页时被误标记为truncated。例：maxPages=20，处理了20页，还有第21页，pageNum=21>20→truncated=true，但实际上20页全部处理完毕。</td><td>在循环内检测：当pageNum>maxPages且hasMore时设置truncated，或者改为<code>if (pageNum > maxPages && hasMore) truncated=true;</code></td></tr>
+<tr><td class="id">2</td><td class="sev"><span class="badge badge-critical">P0</span></td><td class="file">content.js</td><td class="loc">110</td><td><b>文字颜色前缀剥离bug</b>：<code>fgColor.toLowerCase().replace(/^background_/,'')</code>，若飞书返回<code>background_red</code>（背景色值），剥离后变成<code>red</code>，匹配到FEISHU_COLORS['red']=🔴——这是文字颜色emoji而非背景高亮标记。背景色应走bgColor分支而非fgColor。</td><td>fgColor不应剥离<code>background_</code>前缀，或剥离后检查原值是否含该前缀来决定走文字/背景分支。</td></tr>
+<tr><td class="id">3</td><td class="sev"><span class="badge badge-critical">P0</span></td><td class="file">content.js</td><td class="loc">321</td><td><b>代码块语言字段路径单一</b>：仅查<code>block.data?.code?.style?.language</code>，但飞书不同API版本/文档类型可能用<code>block.data?.code?.language</code>或<code>block.data?.style?.language</code>。语言信息丢失时所有代码块都可能被标注为原始语言key。</td><td>多路径兜底：<code>block.data?.code?.style?.language || block.data?.code?.language || block.data?.style?.language || ''</code></td></tr>
+<tr><td class="id">4</td><td class="sev"><span class="badge badge-critical">P0</span></td><td class="file">content.js</td><td class="loc">517</td><td><b>task.assignees类型假设</b>：<code>(block.data?.task?.assignees || []).map(a => a.name)</code>——若assignees不是数组（如为null/undefined时正确回退[]），但若为对象<code>{name:'xx'}</code>等非预期类型，<code>.map()</code>会throw TypeError中断整个转换。</td><td>添加类型守卫：<code>Array.isArray(assignees) ? assignees.map(a=>a.name).join(',') : ''</code></td></tr>
+<tr><td class="id">5</td><td class="sev"><span class="badge badge-critical">P0</span></td><td class="file">content.js</td><td class="loc">806</td><td><b>标题文件名XSS风险</b>：<code>document.title?.replace(/[\\/:*?"&lt;&gt;|]/g, '_')</code>——正则中<code>&lt;</code>和<code>&gt;</code>是字面字符，但传入<code>result.title</code>作为下载文件名时，HTML特殊字符未被过滤。若文档标题含<code>&lt;script&gt;xxx&lt;/script&gt;</code>，下载文件名包含风险字符。</td><td>先对title做HTML解码和特殊字符过滤，再用于文件名。或使用更严格的字符白名单。</td></tr>
+<tr><td class="id">6</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">172-184</td><td><b>getPlainText功能不完整</b>：只处理textRun/mentionDoc/mentionUser三种element类型，忽略mentionDate/emoji/inlineEquation/date等类型，与renderElement()覆盖范围不匹配。导致代码块中的公式、日期等内容丢失。</td><td>统一element处理逻辑，或让renderRichText和getPlainText共享element类型处理。</td></tr>
+<tr><td class="id">7</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">355-362</td><td><b>table空行边界</b>：<code>Math.max(...rows.map(r=>r.length),1)</code>——若所有rows为空（无有效行数据），colCount=1，输出<code>| |\n</code>单列表格。应提前返回''。</td><td>在rows.length>0后增加：若所有rows行内cells都为空则返回''。</td></tr>
+<tr><td class="id">8</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">233-262</td><td><b>getApiEndpoint 'docs'类型无专门处理</b>：docs类型直接走兜底space API，但旧版文档(/docs/)可能使用不同的API端点，导致转换失败而非给出明确错误。</td><td>验证docs类型的API可用性，若不可用则返回明确错误提示用户升级到新版文档。</td></tr>
+<tr><td class="id">9</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">29-37</td><td><b>颜色映射不完整</b>：FEISHU_COLORS缺少cyan/teal/brown/pink/white/black(用于非默认黑色)等飞书支持的颜色。textColor字段非默认黑色时，fgColor==='black'的排除逻辑有误——飞书可能返回color=black表示默认，但返回color=#000000或rgb(0,0,0)时不应排除。</td><td>完善颜色映射表覆盖飞书全部颜色；将black检查改为<code>!== 'default' && !(fgColor === 'black' && text未设置颜色)</code>。</td></tr>
+<tr><td class="id">10</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">18-24</td><td><b>LANG_ALIAS严重不足</b>：仅13种语言别名，缺少java/kotlin/swift/rust/php/html/css/sql/ruby/dart/lua/scala等高频语言。飞书代码块支持50+语言，大量语言的高亮信息丢失。</td><td>补充至少50种语言别名映射。或对未映射语言保留原值（已是当前行为，但语言标注不友好）。</td></tr>
+<tr><td class="id">11</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">497-512</td><td><b>gallery中非image子块被静默忽略</b>：循环中<code>cb.data?.type === 'image'</code>过滤，但飞书gallery可能包含视频、GIF等媒体。这些内容完全丢失，无任何提示。</td><td>添加else分支输出占位提示<code>[媒体: ${type}]</code>。</td></tr>
+<tr><td class="id">12</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">579-596</td><td><b>grid中空列会输出空div</b>：<code>if(cb)</code>检查通过但子块为空文本时，<code>colResult.trim()</code>为空，不输出该列div——但若所有列都为空，grid本身也不输出。这是正确的。问题在于部分列有内容部分为空时，空列完全不占位，失去了grid的列结构语义。</td><td>空列输出<code>&lt;div class="column"&gt;\n\n（空列）\n&lt;/div&gt;</code>保持布局。</td></tr>
+<tr><td class="id">13</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">76-123</td><td><b>粗体+斜体+行内代码组合丢失</b>：style.inlineCode优先于bold/italic，若飞书文本同时设置了行内代码+粗体，只能得到<code>`text`</code>而丢失粗体信息。这是因为Markdown不支持行内代码内嵌格式。</td><td>可输出HTML：<code>&lt;code&gt;&lt;strong&gt;text&lt;/strong&gt;&lt;/code&gt;</code>或仅保留代码标记。</td></tr>
+<tr><td class="id">14</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">792</td><td><b>list_active_tasks失败时吞异常</b>：<code>resp && resp.tasks && resp.tasks.length > 0</code>——若resp.tasks为undefined（旧版background无此字段），<code>resp.tasks.length</code>会throw TypeError被外层catch吞掉，导致popup无法恢复状态。</td><td>改为<code>resp?.tasks?.length > 0</code></td></tr>
+<tr><td class="id">15</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">376-418</td><td><b>ZIP图片编号断裂</b>：<code>img_${String(i+idx).padStart(3,'0')}.${ext}</code>——i是批次起始索引，idx是批次内索引。第1批i=0输出img_000..img_004；第2批i=5输出img_005..img_009；合并后编号连续。但如果某批次图片下载失败，失败的编号位置是空白的，文件名不反映原始顺序。</td><td>使用全局递增计数器而非(i+idx)。</td></tr>
+<tr><td class="id">16</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">639-677</td><td><b>saveToHistory去重逻辑不健全</b>：用title去重，但不同文档可能同名（如"未命名文档"）。这导致同名文档的历史被覆盖。</td><td>用title+日期+内容hash组合去重，或使用唯一ID。</td></tr>
+<tr><td class="id">17</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">644</td><td><b>history内容key冲突</b>：<code>HISTORY_CONTENT_PREFIX + encodeURIComponent(currentTitle)</code>——两个同名但不同URL的文档会产生相同contentKey，后保存的覆盖前者。</td><td>key中加入时间戳或URL token: <code>${HISTORY_CONTENT_PREFIX}${Date.now()}_${encodeURIComponent(currentTitle)}</code></td></tr>
+<tr><td class="id">18</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">198-206</td><td><b>navigateToUrl监听器泄漏风险</b>：虽然使用了settled标记防止重复调用，但若chrome.tabs.update本身失败（如tab不存在），listener永远不会被触发，15s超时后settle被调用清理。但15s内如果页面恰好加载完成，listener仍会被触发——此时settled已为true，listener被清理，无问题。唯一风险：settle在setTimeout回调中调用，若页面在15s临界点完成，存在竞态条件。</td><td>使用Promise.race或AbortController模式。</td></tr>
+<tr><td class="id">19</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">background.js</td><td class="loc">71-113</td><td><b>start_conversion无tabId有效性验证</b>：若tab已被关闭，<code>sendMessage(tabId,...)</code>直接失败进入catch，不会通知popup任务失败的具体原因。</td><td>先检查tab是否存在: <code>chrome.tabs.get(tabId)</code>，不存在则直接设置任务为error。</td></tr>
+<tr><td class="id">20</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">background.js</td><td class="loc">149</td><td><b>data URI编码大文件风险</b>：<code>encodeURIComponent(content)</code>会膨胀约2倍，若Markdown超过2MB，data URI远超Chrome限制(~2MB)，下载静默失败。回退的Blob+FileReader方案也可能因Blob巨大而失败。</td><td>对大文件(>500KB)优先使用Blob方案，避免data URI编码。</td></tr>
+<tr><td class="id">21</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">130</td><td><b>mentionDoc无链接时提示不完整</b>：输出<code>📄 ${title}</code>但没有说明为什么是纯文本，用户可能困惑。</td><td>改为<code>📄 ${title}（无可用链接）</code></td></tr>
+<tr><td class="id">22</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">714-718</td><td><b>API code检查不精确</b>：<code>json.code !== 0 && json.code !== undefined</code>——若code字段确实不存在(undefined)，跳过检查；但若code===null，条件为true（null!==0且null!==undefined），会误报错误。</td><td>改为<code>json.code !== undefined && json.code !== null && json.code !== 0</code></td></tr>
+<tr><td class="id">23</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">359</td><td><b>docUrl分隔符dash命名不一致</b>：JS用<code>headerRowProp</code>但飞书API可能是<code>header_row</code>。当前同时检查了<code>block.data?.table?.header_row</code>和<code>block.data?.header_row</code>，但可能还有<code>block.data?.table?.property?.header_row</code>等嵌套路径。</td><td>添加更多路径兜底。</td></tr>
+<tr><td class="id">24</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">146-151</td><td><b>行内公式无公式时静默返回空</b>：<code>eq?'$${eq}$':''</code>——与文本不同，公式块无内容时可能是飞书API异常，应该输出占位符。</td><td>改为<code>eq ? \`$${eq}$\` : '$[公式]$'</td></tr>
+<tr><td class="id">25</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">334-350</td><td><b>downloadMarkdown mimeType错误</b>：Blob type为<code>text/markdown</code>，这不是标准MIME类型<code>text/markdown</code>在某些浏览器中被视为未知类型。标准应为<code>text/markdown;charset=utf-8</code>的变体或用<code>text/plain</code>。</td><td>MIME类型改为<code>text/markdown</code>或添加charset。</td></tr>
+<tr><td class="id">26</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">74</td><td><b>text缺少时fallback不一致</b>：<code>el.textRun?.text || el.text || ''</code>与getPlainText中的<code>el.textRun.text || ''</code>不一致，后者无el.text兜底。</td><td>统一fallback逻辑。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 2 ==================== -->
+<div class="layer-section" id="L2">
+<div class="layer-title">🟡 第2层：鲁棒性 — 22项</div>
+<div class="layer-desc">异常输入处理、边界条件、竞态条件、资源泄漏、静默失败场景。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">27</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">696-714</td><td><b>API fetch无网络超时</b>：fetch无AbortController超时控制，网络慢时无限等待。</td><td>添加30s AbortController超时。</td></tr>
+<tr><td class="id">28</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">714</td><td><b>API返回非JSON崩溃</b>：<code>resp.json()</code>假设响应恒为JSON，若代理/网关返回HTML错误页面，parse会throw未捕获异常。</td><td>检查Content-Type或try-catch resp.json()。</td></tr>
+<tr><td class="id">29</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">726-733</td><td><b>Object.assign大blockMap内存爆炸</b>：飞书文档可能有上万个block，每次分页都全量Object.assign全量复制，大文档可能消耗数百MB内存。</td><td>逐属性赋值或使用Object.assign只在需要时合并。</td></tr>
+<tr><td class="id">30</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">473-654</td><td><b>无限递归风险</b>：processBlock递归处理子节点，若blockMap中存在循环引用（子节点A→子节点B→子节点A），会无限递归导致栈溢出。</td><td>添加visited Set跟踪已处理的block ID。</td></tr>
+<tr><td class="id">31</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">265-330</td><td><b>轮询无指数退避</b>：pollConversion每1秒轮询，若background重启，120次轮询中大量失败都静默忽略（catch块为空）。应减少无用轮询。</td><td>连续失败3次后增加轮询间隔到5s，5次失败后放弃。</td></tr>
+<tr><td class="id">32</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">354-454</td><td><b>ZIP大图片OOM</b>：downloadImagesZip无单图片大小限制，加载数百MB图片到内存会OOM并崩溃popup。</td><td>添加单图片大小限制(如10MB)，超限跳过。</td></tr>
+<tr><td class="id">33</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">662-670</td><td><b>chrome.storage.local.get(null)风险</b>：获取全部存储数据，若用户扩展有其他数据（如其他扩展同一storage），会拉取大量无关数据浪费性能。</td><td>仅获取HISTORY_CONTENT_PREFIX相关key。</td></tr>
+<tr><td class="id">34</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">354-454</td><td><b>ZIP下载无中断处理</b>：popup关闭时仍在下载图片，fetch和JSZip操作继续消耗资源。</td><td>添加AbortController，popup关闭时abort。</td></tr>
+<tr><td class="id">35</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">83-86</td><td><b>行内代码优先于粗体/斜体</b>：若飞书API返回inlineCode+同时bold，当前代码只输出<code>`text`</code>，丢失粗体信息。虽是Markdown限制，但应至少记录警告。</td><td>添加console.debug日志记录被丢弃的格式信息。</td></tr>
+<tr><td class="id">36</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">100-106</td><td><b>strikethrough/underline与bold/italic叠加顺序</b>：strikethrough在bold之后处理，underline也在bold之后。叠加顺序固定不可配置，某些Markdown渲染器对<code>~~**text**~~</code>和<code>**~~text~~**</code>的渲染结果可能不同。</td><td>文档化叠加顺序或用统一顺序（粗体→斜体→删除线→下划线）。</td></tr>
+<tr><td class="id">37</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">355-415</td><td><b>表格单元格转义可能破坏嵌套格式</b>：所有<code>*</code>和<code>_</code>都被转义，包括在代码块内的。若单元格含<code>`some_code`</code>，反引号被转义为<code>\`some_code\`</code>，破坏Markdown代码格式。</td><td>转义前检测是否已在行内代码/代码块内。</td></tr>
+<tr><td class="id">38</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">799-802</td><td><b>markdown清理正则可能破坏代码块内容</b>：<code>/\n{3,}/g</code>全局替换会修改代码块内的连续空行，破坏代码格式。</td><td>排除代码块内容：用更精确的正则或分块处理。</td></tr>
+<tr><td class="id">39</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">47</td><td><b>renderRichText空iat返回''</b>：若blockData存在但iat为空数组<code>[]</code>（与undefined不同），应该返回什么？当前不进入for循环返回''。但应该考虑iat=[]代表文本为空。</td><td>明确文档注释：iat=[]和iat=undefined都返回''。</td></tr>
+<tr><td class="id">40</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">145</td><td><b>chrome.tabs.sendMessage无超时</b>：若content script未注入或无响应，sendMessage永久pending。</td><td>包装Promise.race超时(3s)。</td></tr>
+<tr><td class="id">41</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">789-829</td><td><b>init()无错误边界</b>：初始化中的list_active_tasks和storage.get失败被catch吞掉，但后续detectDoc也可能失败——用户看到的可能是空白popup。</td><td>init中使用统一的错误处理，至少显示可用UI。</td></tr>
+<tr><td class="id">42</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">586-593</td><td><b>DOCX导出Blob无大小限制</b>：大文档导出DOCX的Blob可能超过几百MB，浏览器可能拒绝或卡死。</td><td>对大文档(>5MB MD)给出警告提示。</td></tr>
+<tr><td class="id">43</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">832-841</td><td><b>pagehide可能不被触发</b>：某些浏览器/场景下pagehide不触发（如强制关闭），导致状态未保存。</td><td>在状态变更时也实时保存到storage（而非仅pagehide时）。</td></tr>
+<tr><td class="id">44</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">background.js</td><td class="loc">16-19</td><td><b>getTasks无错误处理</b>：若chrome.storage.local.get失败（配额超限、存储损坏），会throw未捕获异常。</td><td>try-catch并返回空对象{}作为兜底。</td></tr>
+<tr><td class="id">45</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">background.js</td><td class="loc">44-53</td><td><b>cleanupOldTasks竞态</b>：若两个alarm同时触发cleanup（理论上不会），delete+save可能导致数据不一致。</td><td>添加互斥锁或使用原子操作。</td></tr>
+<tr><td class="id">46</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">372</td><td><b>maxConcurrent硬编码5</b>：并发下载数固定为5，未考虑网络环境（慢网络应该减少并发，快网络可以增加）。</td><td>根据下载速度动态调整或让用户配置。</td></tr>
+<tr><td class="id">47</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">381</td><td><b>fetch图片无CORS处理</b>：{mode:'cors'}可能导致飞书图片CDN的CORS策略拒绝，下载失败。应使用no-cors模式或通过background script下载。</td><td>改为通过background.js代理下载，绕过CORS限制。</td></tr>
+<tr><td class="id">48</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">424-430</td><td><b>ZIP生成无进度反馈</b>：<code>zip.generateAsync</code>耗时可能很长（压缩大文件），用户看到进度100%后长时间无反应。</td><td>使用generateAsync的onUpdate回调更新进度。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 3 ==================== -->
+<div class="layer-section" id="L3">
+<div class="layer-title">🔵 第3层：功能缺失 — 24项</div>
+<div class="layer-desc">现有功能不完整或缺少对常见场景的支持。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">49</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持嵌套列表类型混合</b>：飞书支持同一层级有序/无序列表混合，但当前实现的prevSiblingType边界检测只在ordered类型间生效，bullet列表无编号重置逻辑（虽然bullet不需要编号）。如果飞书有"检查清单"类型，未被支持。</td><td>研究飞书block类型列表，确认是否遗漏"checklist"等类型。</td></tr>
+<tr><td class="id">50</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持媒体block</b>：飞书文档支持视频、音频、白板等block，当前无任何解析器。</td><td>添加video/audio/whiteboard等block解析器。</td></tr>
+<tr><td class="id">51</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持评论/标注</b>：飞书文档的评论(comment)和标注(annotation)完全丢失。</td><td>添加评论/标注块解析，至少输出评论数量和作者。</td></tr>
+<tr><td class="id">52</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持文档协作信息</b>：文档的创建者、最后修改者、修改时间等元数据完全丢失。</td><td>在Markdown开头添加文档元数据注释块。</td></tr>
+<tr><td class="id">53</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持文档大纲/目录生成</b>：飞书文档有自动生成的大纲，转换后丢失了文档结构导航。</td><td>基于标题块自动生成目录。</td></tr>
+<tr><td class="id">54</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持页码/分页信息保留</b>：转换结果中无原始分页信息，多页文档结构丢失。</td><td>在分页处插入<code>&lt;!-- page break --&gt;</code>标记。</td></tr>
+<tr><td class="id">55</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持批量转换</b>：用户无法一次转换多个文档。知识空间有多篇文档时需要逐个操作。</td><td>支持粘贴知识空间URL批量识别和转换。</td></tr>
+<tr><td class="id">56</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持格式选项</b>：仅支持Markdown和DOCX，不支持PDF、HTML、纯文本导出。</td><td>添加PDF/HTML/PlainText导出选项。</td></tr>
+<tr><td class="id">57</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持自定义输出设置</b>：无法配置换行符(CRLF/LF)、缩进、图片处理方式等。</td><td>添加高级设置面板。</td></tr>
+<tr><td class="id">58</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持历史搜索</b>：历史记录超过20条时只能滚动查找，无搜索功能。</td><td>添加历史搜索输入框。</td></tr>
+<tr><td class="id">59</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持表格合并单元格</b>：飞书表格支持合并单元格(colspan/rowspan)，当前为每个单元格独立输出，丢失合并信息。</td><td>在表头或cell数据中检测合并信息并在Markdown中标注。</td></tr>
+<tr><td class="id">60</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持表格列宽/对齐</b>：飞书表格的列宽和对齐方式(左/居中/右)丢失。</td><td>在Markdown表头分隔行中体现对齐。</td></tr>
+<tr><td class="id">61</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持图片尺寸/位置</b>：飞书图片有尺寸、对齐方式等属性，转换后全部丢失。</td><td>在图片alt或HTML中保留尺寸信息。</td></tr>
+<tr><td class="id">62</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持页内锚点</b>：飞书文档的锚点链接/跳转功能丢失。</td><td>基于标题生成锚点ID。</td></tr>
+<tr><td class="id">63</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持自定义Font颜色值</b>：飞书支持自定义RGB颜色值(如#FF5733)，当前仅映射预定义颜色名，自定义颜色完全丢失。</td><td>对于非预定义颜色，输出RGB/HEX值标注。</td></tr>
+<tr><td class="id">64</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持文字间距/缩进</b>：飞书支持文字间距、首行缩进等排版属性，转换后丢失。</td><td>添加CSS或HTML内联样式保留。</td></tr>
+<tr><td class="id">65</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持Doc内的Markdown语法块</b>：如果飞书文档本身包含Markdown代码块（如示例代码），它会和转换后的Markdown冲突。</td><td>在代码块内容外层添加raw标记或使用HTML实体保护。</td></tr>
+<tr><td class="id">66</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持快捷键盘操作</b>：popup无键盘快捷键(Ctrl+C复制,Ctrl+S下载等)。</td><td>添加全局键盘监听。</td></tr>
+<tr><td class="id">67</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持右键菜单集成</b>：无法在飞书页面右键直接转换，必须打开popup。</td><td>添加Chrome右键菜单(contextMenus)。</td></tr>
+<tr><td class="id">68</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持暗色模式</b>：popup UI无暗色主题适配。</td><td>添加prefers-color-scheme媒体查询。</td></tr>
+<tr><td class="id">69</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持国际化</b>：所有UI文本硬编码为中文，无i18n支持。</td><td>提取所有字符串到i18n messages文件。</td></tr>
+<tr><td class="id">70</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>不支持文本高亮颜色叠加</b>：当文本同时有文字颜色和背景高亮时，fgColor和bgColor各自处理，但最终输出可能顺序不当（先加颜色emoji再加==高亮==）。</td><td>统一颜色/高亮的输出顺序和格式。</td></tr>
+<tr><td class="id">71</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持文档对比/差异</b>：无版本对比功能，无法查看文档变更。</td><td>可选功能，优先级低。</td></tr>
+<tr><td class="id">72</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>不支持分享/云存储</b>：转换结果仅可下载，无直接分享到其他平台的选项。</td><td>可选功能。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 4 ==================== -->
+<div class="layer-section" id="L4">
+<div class="layer-title">📝 第4层：代码质量 — 28项</div>
+<div class="layer-desc">代码可读性、DRY原则、命名规范、注释完整性、代码结构。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">73</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">269-292</td><td><b>heading1-6严重代码重复</b>：6个函数实现几乎完全相同，仅#数量不同。应合并为一个参数化函数。</td><td>合并为<code>heading(block, level)</code>或<code>['heading1','heading2',...].forEach(lv=>BlockParser[lv]=block=>{...})</code>。</td></tr>
+<tr><td class="id">74</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">203-218</td><td><b>parseDocUrl与parsePastedUrl重复</b>：两处都有几乎相同的7个URL解析pattern数组，重复定义。应提取为共享模块。</td><td>提取URL_PATTERNS为共享常量，或让popup.js通过message调用content.js的解析。</td></tr>
+<tr><td class="id">75</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">11</td><td><b>IIFE包裹无意义</b>：content.js运行在隔离的content script环境，IIFE的局部作用域无额外安全收益，反而增加嵌套层级。</td><td>去除IIFE或使用ES模块(import/export)，MV3已支持ES模块。</td></tr>
+<tr><td class="id">76</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">11</td><td><b>popup.js同样IIFE无意义</b>：popup运行在独立页面，IIFE不提供额外保护。</td><td>去除IIFE外包装。</td></tr>
+<tr><td class="id">77</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">18-24</td><td><b>LANG_ALIAS冗余映射</b>：<code>'python':'python'</code>和<code>'xml':'xml'</code>映射到自身，无实际作用。</td><td>移除自身映射，仅保留需要转换的别名。</td></tr>
+<tr><td class="id">78</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">15</td><td><b>_convertOpts命名不一致</b>：用下划线前缀表示"私有"不符合JS惯例（JS通常用#前缀或闭包）。</td><td>改为<code>let convertOpts</code>或使用WeakMap存储。</td></tr>
+<tr><td class="id">79</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">55</td><td><b>魔法字符串'textRun'多处硬编码</b>：多处代码有<code>'textRun'</code>、<code>'text'</code>、<code>'table_row'</code>等块类型字符串，应用常量定义。</td><td>定义BlockType/TYPE常量对象。</td></tr>
+<tr><td class="id">80</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">128</td><td><b>mentionDoc的el.title字段冲突</b>：<code>el.mentionDoc?.title || el.title</code>——<code>el.title</code>可能访问HTML元素的title属性(若el是DOM元素)，属于错误的fallback路径。</td><td>移除<code>el.title</code>fallback，或改为<code>el.mentionDoc?.title</code>即可。</td></tr>
+<tr><td class="id">81</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">586-594</td><td><b>grid()缩进不一致</b>：L381的table单元格循环内有异常缩进（4空格而非2空格）。</td><td>统一缩进为2空格。</td></tr>
+<tr><td class="id">82</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">74-75</td><td><b>textRun属性路径冗长</b>：<code>el.textRun?.textStyle || el.textStyle || {}</code>多次出现，可提取为局部变量。</td><td>在函数开头获取style引用。</td></tr>
+<tr><td class="id">83</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">443-445</td><td><b>image()src获取路径重复</b>：gallery中也用了相同的<code>block.data?.image?.source_url || block.data?.file?.source_url</code>。提取为工具函数。</td><td>提取<code>getImageUrl(blockData)</code>工具函数。</td></tr>
+<tr><td class="id">84</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">1-8</td><td><b>注释头部冗长</b>：v2.1-v2.7的变更记录堆在注释中，应移到CHANGELOG.md。</td><td>创建CHANGELOG.md，头部仅保留当前版本和功能概述。</td></tr>
+<tr><td class="id">85</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">799-802</td><td><b>markdown后处理链过长</b>：多步replace链式调用可读性差。</td><td>提取为独立normalizeMarkdown函数。</td></tr>
+<tr><td class="id">86</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">22-48</td><td><b>el对象冗长</b>：28个属性全手动赋值，可设计自动绑定机制(如data-ref属性扫描)。</td><td>使用<code>document.querySelectorAll('[id]')</code>循环绑定。</td></tr>
+<tr><td class="id">87</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">25</td><td><b>$辅助函数命名不佳</b>：单字符<code>$</code>通常关联jQuery，且在严格模式下可能与其他库冲突。</td><td>改为<code>getEl</code>或<code>byId</code>。</td></tr>
+<tr><td class="id">88</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">51-66</td><td><b>Tab切换逻辑耦合UI更新</b>：tab切换直接操作DOM类名和数据渲染，应分离为setActiveTab和renderTab。</td><td>抽取setActiveTab(tabName)函数。</td></tr>
+<tr><td class="id">89</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">488-538</td><td><b>exportDocx转换链过长</b>：20+个链式.replace调用难以调试和测试。</td><td>提取为独立的markdownToHtml函数，或使用Markdown解析库。</td></tr>
+<tr><td class="id">90</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">540-585</td><td><b>DOCX HTML模板字符串冗长</b>：CSS和HTML模板内嵌在JS中，超100行模板字符串。应提取为独立HTML/CSS文件。</td><td>分离template.html/css，通过fetch加载或作为独立文件。</td></tr>
+<tr><td class="id">91</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">686</td><td><b>renderHistory用innerHTML拼接</b>：<code>meta.map(...).join('</code>直接拼接HTML，如果title含未转义字符存在XSS风险（尽管使用了escapeHtml）。更好的做法是用DOM API创建元素。</td><td>使用createElement+textContent模式。</td></tr>
+<tr><td class="id">92</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">624</td><td><b>常量HISTORY_META_KEY布局松散</b>：常量定义在文件中间(623行)，应和STORAGE_KEY等一起放在文件顶部。</td><td>将所有常量移到文件开头。</td></tr>
+<tr><td class="id">93</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">790-809</td><td><b>init()中嵌套try-catch过深</b>：两层try-catch嵌套(活跃任务恢复+last恢复)，逻辑上可合并。</td><td>抽取为initTasks和initLastResult两个独立函数。</td></tr>
+<tr><td class="id">94</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">824-855</td><td><b>injectUI使用innerHTML创建大量元素</b>：超30行HTML模板内嵌JS，与popup.js同样问题。</td><td>使用DOM API或用template元素分离。</td></tr>
+<tr><td class="id">95</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">69-95</td><td><b>showStatus/hideStatus等工具函数缺少JSDoc</b>：仅定义在"工具函数"注释块下，各自无独立说明。</td><td>添加JSDoc注释说明参数和用途。</td></tr>
+<tr><td class="id">96</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">68</td><td><b>section注释风格不一致</b>：用<code>// ---- xxx ----</code>分割，但分隔符长度和风格在不同文件间不统一(content.js用<code>// ---- xxx ----</code>但行数不同)。</td><td>统一分隔样式。</td></tr>
+<tr><td class="id">97</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">254</td><td><b>getApiEndpoint条件分支可简化</b>：wiki/space/docx三个分支返回完全相同的对象，docs和兜底也相同。实际只有两分支：支持的类型和不支持的类型。</td><td>合并为: <code>const supported = ['wiki','space','docx','docs']; return supported.includes(docInfo.type) ? endpoint : errorEndpoint</code></td></tr>
+<tr><td class="id">98</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">background.js</td><td class="loc">16-40</td><td><b>getTasks/setTask等4个函数大量重复代码</b>：每个函数都是get→修改→save模式。可抽象为<code>updateTasks(updater)</code>。</td><td>合并为<code>async function updateTasks(fn){const t=await getTasks();fn(t);await saveTasks(t)}</code></td></tr>
+<tr><td class="id">99</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">background.js</td><td class="loc">186-195</td><td><b>cleanupOldTasks调用两次</b>：模块顶层调用一次+alarm定时调用一次。模块顶层调用后无catch，若失败SW可能崩溃。</td><td>模块顶层的调用也应try-catch。</td></tr>
+<tr><td class="id">100</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">140-144</td><td><b>内联样式冗长</b>：urlInput的内联style属性超过100字符，应提取到CSS文件。</td><td>为urlInput添加class，CSS中定义样式。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 5 ==================== -->
+<div class="layer-section" id="L5">
+<div class="layer-title">🔒 第5层：XSS / 安全 — 18项</div>
+<div class="layer-desc">注入攻击、内容安全策略、数据泄露、URL安全、存储安全。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">101</td><td class="sev"><span class="badge badge-critical">P0</span></td><td class="file">content.js</td><td class="loc">878-882</td><td><b>下载链接可被XSS利用</b>：<code>a.download = </code>${result.title}.md``，result.title来自飞书API，若标题含恶意字符可能被用于下载攻击。</td><td>对title严格过滤，仅保留安全字符。</td></tr>
+<tr><td class="id">102</td><td class="sev"><span class="badge badge-critical">P0</span></td><td class="file">content.js</td><td class="loc">885</td><td><b>statusEl.innerHTML直接拼接API数据</b>：result.title、result.markdown.length等来自API，通过innerHTML插入可能执行script。</td><td>使用textContent或对动态内容做escapeHtml处理。</td></tr>
+<tr><td class="id">103</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">100-106</td><td><b>escapeHtml对#39的处理不完整</b>：负向前瞻<code>&amp;(?!(?:amp|lt|gt|quot|#39|...</code>中未包含<code>#x27</code>(单引号十六进制实体)、<code>#x2F</code>等。攻击者可构造绕过。</td><td>补充所有常见HTML实体到负向前瞻列表。</td></tr>
+<tr><td class="id">104</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">458-478</td><td><b>sanitizeUrl白名单不完整</b>：允许ftp和mailto协议，ftp可能用于SSRF攻击，mailto可能用于spam。此外<code>javascript:</code>等多种危险协议未被列出。</td><td>缩小白名单为http/https/相对路径，移除ftp/mailto。</td></tr>
+<tr><td class="id">105</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">467</td><td><b>data URI仅检查图片类型</b>：<code>^data:image\/(png|jpeg|gif|webp|bmp|tiff);</code>正则中逗号后有分号，可能匹配失败(标准data URI是<code>data:image/png;base64,...</code>冒号后有分号是正确的)。但未限制非base64的纯文本数据(可能含JS)。</td><td>对data URI也进行内容类型白名单+限制大小。</td></tr>
+<tr><td class="id">106</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">505-511</td><td><b>DOCX中sanitizeUrl+replace(/&amp;/g,'&')引入新XSS</b>：sanitizeUrl返回安全URL后，<code>.replace(/&amp;/g,'&')</code>还原&amp;转义——若sanitizeUrl返回的URL本身包含<code>&amp;amp;</code>(双重实体)，还原后变成<code>&amp;</code>再被后续HTML解析误读。</td><td>在HTML属性值中保留&amp;转义，不要还原。</td></tr>
+<tr><td class="id">107</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">484</td><td><b>exportDocx先escapeHtml再regex替换存在绕过</b>：escapeHtml后<code>**bold**</code>的<code>*</code>未转义，但后续regex将其替换为<code>&lt;strong&gt;...</code>。但如果Markdown中有<code>&lt;img src=x onerror=alert(1)&gt;</code>，它被escapeHtml转义为<code>&amp;lt;img src=x onerror=alert(1)&amp;gt;</code>，regex不会匹配，但pass-through到HTML中可能被浏览器解析。</td><td>更安全的方式是使用Markdown解析库(marked/DOMPurify)。</td></tr>
+<tr><td class="id">108</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">686-692</td><td><b>historyList XSS风险</b>：<code>h.title</code>经过escapeHtml处理，但<code>h.date</code>未经过html转义。如果用户修改localStorage注入恶意日期，可能造成XSS。</td><td>所有用户控制的数据都经过escapeHtml。</td></tr>
+<tr><td class="id">109</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">79</td><td><b>链接URL未过滤</b>：<code>[${text}](${style.link.url})</code>直接插入API返回的URL。若URL含<code>)</code>会提前关闭Markdown链接语法，破坏输出且可能造成XSS。</td><td>转义URL中的<code>)</code>字符为<code>\\)</code>或检查URL是否合法。</td></tr>
+<tr><td class="id">110</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">473</td><td><b>链接卡片URL同样未过滤</b>：link_card输出的<code>[${title}](${url})</code>也有同样问题。</td><td>统一URL转义处理。</td></tr>
+<tr><td class="id">111</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">5</td><td><b>无CSP meta标签</b>：popup.html缺少Content-Security-Policy，扩展popup是高风险XSS目标。</td><td>添加CSP: <code>&lt;meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"&gt;</code></td></tr>
+<tr><td class="id">112</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">824-855</td><td><b>injectUI的innerHTML直接插入</b>：按钮和状态栏的HTML模板通过innerHTML写入DOM，如果攻击者能控制文档DOM（如通过飞书XSS），可能注入恶意内容。</td><td>使用DOM API创建元素。</td></tr>
+<tr><td class="id">113</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">629-632</td><td><b>localStorage存储JSON可能被篡改</b>：loadHistoryMeta读取localStorage，攻击者可通过其他扩展或脚本修改数据。应验证JSON结构。</td><td>添加schema验证或使用chrome.storage.local(更安全)。</td></tr>
+<tr><td class="id">114</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">702-712</td><td><b>fetch credentials: 'include'</b>：携带cookie发送跨域请求，若飞书API支持CORS且存在CSRF漏洞，可能被利用。</td><td>MVP3中可评估是否使用same-origin模式。</td></tr>
+<tr><td class="id">115</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">600</td><td><b>clipboard API无权限检查</b>：navigator.clipboard.writeText在某些上下文中需要用户手势或权限，失败时仅显示通用错误。</td><td>检查Permissions API或提供fallback(textarea execCommand)。</td></tr>
+<tr><td class="id">116</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">587</td><td><b>DOCX BOM+HTML可伪装为.doc</b>：使用BOM(\ufeff)和application/msword MIME欺骗Word打开HTML——如果HTML中有恶意脚本，可能影响Word的web视图。</td><td>使用标准.docx格式(OOXML)代替伪.doc。</td></tr>
+<tr><td class="id">117</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">586-593</td><td><b>DOCX下载的Blob构造中title未过滤</b>：<code>${escapeHtml(currentTitle)}.doc</code>——title中的路径穿越字符(../)未过滤，可能控制下载位置。</td><td>过滤title中的<code>/</code>、<code>\\</code>、<code>..</code>等路径字符。</td></tr>
+<tr><td class="id">118</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>host_permissions过于宽泛</b>：<code>https://*.feishu.cn/*</code>覆盖所有飞书子域名和路径，最小权限应为仅docs/wiki相关路径。</td><td>缩小为<code>https://*.feishu.cn/wiki/*</code>、<code>https://*.feishu.cn/docx/*</code>等精确路径。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 6 ==================== -->
+<div class="layer-section" id="L6">
+<div class="layer-title">⚡ 第6层：性能 — 20项</div>
+<div class="layer-desc">内存泄漏、不必要的计算、DOM操作优化、异步效率。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">119</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">726</td><td><b>Object.assign大对象复制</b>：每次分页都全量复制mergedBlockMap（随页数增长而变大）。第10页时可能复制数万属性。</td><td>使用for-in逐属性赋值（Object.assign的性能在大对象上不如手动循环）。</td></tr>
+<tr><td class="id">120</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">729-733</td><td><b>blockSeq去重每页全量扫描</b>：seqIds Set每次add前都has检查，对长文档（20页*200块=4000块）的has操作虽O(1)但仍有开销。</td><td>直接add不检查(Set自动去重)，但需要保持顺序——当前方案已是最优。</td></tr>
+<tr><td class="id">121</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">content.js</td><td class="loc">659-669</td><td><b>collectUnresolvedRefs双重循环</b>：遍历所有blockMap的entries再遍历每个block的children，复杂度O(N*M)。大文档可能上万次迭代。</td><td>一次遍历完成：遍历mergedBlockSeq中的ID，收集所有引用的子ID到Set，然后diff。</td></tr>
+<tr><td class="id">122</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">287</td><td><b>pollConversion动画进度计算浪费</b>：每次轮询+0.5%直到90%，但进度不反映实际转换进度，仅是虚假动画。增加了不必要的DOM操作。</td><td>仅在status变化时更新DOM，不搞假进度动画。</td></tr>
+<tr><td class="id">123</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">662</td><td><b>storage.local.get(null)拉取所有数据</b>：每次保存历史都获取全部storage数据来清理，可能包含MB级数据。</td><td>维护独立的keys列表，或仅查询history_content_*前缀。</td></tr>
+<tr><td class="id">124</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">376-420</td><td><b>ZIP分批下载效率低</b>：5个并发固定，对于100张图片需要20轮。可动态调整为10-20并发(Chrome支持6-10并发连接)。</td><td>增加maxConcurrent到10或使用动态并发。</td></tr>
+<tr><td class="id">125</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">397</td><td><b>split+join URL替换O(N²)</b>：每下载一张图片对整个markdown做split(img.url).join(localPath)，markdown越长、图片越多，复杂度越高。</td><td>使用Map存储URL→localPath映射，下载完成后一次性替换。</td></tr>
+<tr><td class="id">126</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">524-531</td><td><b>DOCX ol/ul合并正则回溯风险</b>：<code>[\s\S]*?</code>在长列表中可能产生大量回溯（ReDoS）。</td><td>使用更高效的正则或用逐行解析替代正则。</td></tr>
+<tr><td class="id">127</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">686-692</td><td><b>renderHistory中重复escapeHtml</b>：每个历史项的title调用escapeHtml两次（一次title属性一次innerHTML），应缓存结果。</td><td>缓存escapeHtml结果。</td></tr>
+<tr><td class="id">128</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">51-66</td><td><b>Tab切换查询所有.tab元素</b>：每次切换都querySelectorAll('.tab')和('.tab-content')，应缓存这些NodeList。</td><td>在el对象中缓存tabElements和tabContents。</td></tr>
+<tr><td class="id">129</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">694-709</td><td><b>renderHistory重复绑定事件</b>：每次renderHistory都querySelectorAll+addEventListener，旧事件监听器未清理导致内存泄漏（虽然innerHTML替换了DOM，但闭包引用可能残留）。</td><td>使用事件委托：在historyList上绑定单次click监听。</td></tr>
+<tr><td class="id">130</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">832</td><td><b>pagehide每次保存整个storage</b>：关闭popup时set整个对象，即使内容没变。</td><td>仅在内容变化时设置dirty标记。</td></tr>
+<tr><td class="id">131</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">268-614</td><td><b>BlockParser对象字面量在每次调用时被引用</b>：虽定义一次，但26个方法每个都是独立函数（64行），加载content.js时就全量解析。</td><td>影响微小，但可考虑惰性加载不常用的parser。</td></tr>
+<tr><td class="id">132</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">364-365</td><td><b>JSZip全局对象检测缺失</b>：下载ZIP时假设JSZip已加载，如果jszip.min.js加载失败，new JSZip()会throw ReferenceError且被外层catch给误报为打包失败。</td><td>先检查<code>typeof JSZip !== 'undefined'</code>。</td></tr>
+<tr><td class="id">133</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">868-874</td><td><b>convertDoc()调用每次都创建options对象</b>：<code>{tables:true,images:true,links:true,debug:false}</code>可以提取为DEFAULT_OPTS常量避免重复创建。</td><td>提取DEFAULT_OPTS常量。</td></tr>
+<tr><td class="id">134</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">423-424</td><td><b>table colCount计算使用Math.max+spread</b>：<code>Math.max(...rows.map(r=>r.length),1)</code>，rows可能有数百行，spread在V8中有参数数量限制。</td><td>使用reduce: <code>rows.reduce((m,r)=>Math.max(m,r.length),1)</code></td></tr>
+<tr><td class="id">135</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">740-743</td><td><b>restoreFromHistory中多次querySelectorAll</b>：切换Tab时querySelectorAll('.tab')和('.tab-content')，与Tab切换事件处理器中的查询重复。</td><td>提取setActiveTab函数复用。</td></tr>
+<tr><td class="id">136</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">789-809</td><td><b>init中await两次</b>：先await list_active_tasks，再await storage.local.get，可并行化。</td><td>使用Promise.all并行。</td></tr>
+<tr><td class="id">137</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">616-620</td><td><b>togglePreview每次slice 8000字符</b>：展开预览时对7000字符内容slice(0,8000)也创建了新字符串，对小于8000的内容没必要。</td><td>先判断length再用slice。</td></tr>
+<tr><td class="id">138</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">192</td><td><b>jszip.min.js同步加载阻塞</b>：script标签同步加载jszip，即使ZIP功能未使用也让popup启动变慢。</td><td>改为动态import或延迟加载(async/defer)。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 7 ==================== -->
+<div class="layer-section" id="L7">
+<div class="layer-title">🎨 第7层：UX / 可访问性 — 22项</div>
+<div class="layer-desc">用户交互体验、错误提示清晰度、无障碍访问、界面一致性。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">139</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">864</td><td><b>错误信息无技术细节</b>：content.js injectUI错误处理仅显示err.message，对调试无帮助。</td><td>添加console.error(err)保留完整堆栈。</td></tr>
+<tr><td class="id">140</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">278</td><td><b>转换超时无重试建议</b>：显示"转换超时"后无任何操作引导。</td><td>添加"请检查网络或减小文档大小后重试"提示。</td></tr>
+<tr><td class="id">141</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">605</td><td><b>复制失败提示不明确</b>："请尝试重新选择文本"对Markdown复制场景无意义。</td><td>改为"请确认浏览器剪贴板权限已开启"。</td></tr>
+<tr><td class="id">142</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">152-154</td><td><b>URL预填后无反馈</b>：预填URL后用户不知道已经自动填了，可能再次手动粘贴。</td><td>预填后短暂高亮或tooltip提示"已自动填入当前页面URL"。</td></tr>
+<tr><td class="id">143</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">266</td><td><b>轮询期间UI无取消按钮</b>：转换进行中用户无法取消，只能等待超时。</td><td>添加取消按钮或点击"开始转换"可中断。</td></tr>
+<tr><td class="id">144</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">609-621</td><td><b>预览无滚动位置保持</b>：togglePreview关闭再打开后滚动位置归零。</td><td>缓存scrollTop并在展开时恢复。</td></tr>
+<tr><td class="id">145</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">69-72</td><td><b>status自动消失时间不统一</b>：copyToClipboard的成功信息2s后消失，但转换成功信息永久显示。</td><td>统一所有自动消失时间为3-5s。</td></tr>
+<tr><td class="id">146</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">90-95</td><td><b>enableButtons不更新预览按钮状态</b>：当转换完成后预览按钮始终可用，但如果没有Markdown内容点击无反应——已由togglePreview内检查处理。但不一致。</td><td>预览按钮也应该基于hasResult禁用/启用。</td></tr>
+<tr><td class="id">147</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">10</td><td><b>popup宽度固定420px</b>：小屏幕或字体放大时可能溢出。</td><td>使用min-width和max-width代替固定宽度。</td></tr>
+<tr><td class="id">148</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">62</td><td><b>history-list无空状态区分</b>：加载中、空记录、错误状态都显示相同消息。</td><td>区分三种状态的消息。</td></tr>
+<tr><td class="id">149</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">356</td><td><b>ZIP下载无确认提示</b>：用户点击"图片+ZIP"后直接开始下载，无预览或确认。</td><td>显示确认对话框："将下载X张图片并打包为ZIP，确认？"</td></tr>
+<tr><td class="id">150</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">481</td><td><b>导出DOCX无格式预览</b>：用户不知道DOCX长什么样。</td><td>添加"预览DOCX"选项或样例截图。</td></tr>
+<tr><td class="id">151</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">153</td><td><b>checkbox标签不可点击</b>：<code>input[type="checkbox"]</code>虽然被label包裹，但如果用户恰好点击input和label之间的空隙（实际不大可能），不会触发。当前实现正确。</td><td>保持(实际无问题)。</td></tr>
+<tr><td class="id">152</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">616-620</td><td><b>预览无语法高亮</b>：预览区域用等宽字体，但无Markdown语法高亮，体验较差。</td><td>添加简易Markdown语法高亮CSS。</td></tr>
+<tr><td class="id">153</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">337</td><td><b>下载文件名含非法字符时无提示</b>：title含<code>/?*</code>等非法字符时下载静默失败或被截断。</td><td>下载前验证并提示或自动修复文件名。</td></tr>
+<tr><td class="id">154</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">51-66</td><td><b>Tab切换无过渡动画</b>：内容切换瞬间完成，视觉跳动。</td><td>添加fade过渡动画。</td></tr>
+<tr><td class="id">155</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">82</td><td><b>进度条颜色固定蓝→绿渐变</b>：无完成/错误状态的颜色区分。</td><td>完成时变绿，错误时变红。</td></tr>
+<tr><td class="id">156</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">8</td><td><b>CSS大量重复值</b>：<code>#6B8CFF</code>、<code>#4A6CF7</code>等颜色值重复多次，应定义CSS变量。</td><td>使用CSS自定义属性: <code>--primary: #4A6CF7;</code></td></tr>
+<tr><td class="id">157</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">832</td><td><b>页面按钮无tooltip</b>：浮窗按钮只有文字，无title属性说明。</td><td>添加title="点击转换飞书文档为Markdown"。</td></tr>
+<tr><td class="id">158</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">832-853</td><td><b>按钮hover效果仅scale</b>：无focus-visible样式，键盘用户无视觉反馈。</td><td>添加:focus-visible样式。</td></tr>
+<tr><td class="id">159</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">860-901</td><td><b>内容预览无复制按钮</b>：预览区纯只读，用户需关闭预览才能复制。</td><td>在预览区右上角添加复制按钮。</td></tr>
+<tr><td class="id">160</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">782</td><td><b>Enter键导航无loading状态统一</b>：btnUrlGo的loading和手动点击使用相同逻辑，但键盘触发无视觉反馈(按下Enter后btnUrlGo瞬间变化)。</td><td>微小改进，设置aria-busy属性。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 8 ==================== -->
+<div class="layer-section" id="L8">
+<div class="layer-title">🔧 第8层：可维护性 / 可测试性 — 20项</div>
+<div class="layer-desc">代码可测试性、模块化、配置管理、日志系统。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">161</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无单元测试</b>：整个项目无任何测试文件，3个JS文件共约2000行零测试覆盖。</td><td>添加Jest/Vitest测试：至少覆盖renderRichText、BlockParser核心方法、escapeHtml、sanitizeUrl。</td></tr>
+<tr><td class="id">162</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无集成测试</b>：无端到端测试验证popup→content→background消息流。</td><td>使用Puppeteer或Playwright编写E2E测试。</td></tr>
+<tr><td class="id">163</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无日志系统</b>：仅有console.log级别的debug输出，生产环境无法追踪问题。</td><td>使用chrome.storage.local或IndexedDB实现结构化日志。</td></tr>
+<tr><td class="id">164</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无错误边界/全局错误处理</b>：未捕获的Promise rejection不会上报。</td><td>添加window.addEventListener('unhandledrejection',...)全局处理。</td></tr>
+<tr><td class="id">165</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无版本兼容性检测</b>：没有检测飞书API版本变更的机制，API改了扩展静默失败。</td><td>在关键API调用处添加schema验证和版本检测。</td></tr>
+<tr><td class="id">166</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无TypeScript类型定义</b>：飞书API的block数据结构完全无类型，全靠运行时猜测字段名。</td><td>添加飞书API TypeScript类型定义文件(.d.ts)。</td></tr>
+<tr><td class="id">167</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">-</td><td><b>_convertOpts全局可变状态</b>：模块级变量_convertOpts在并发调用时可能被覆盖（虽然Chrome扩展通常是单次调用）。但如果有popup+页面按钮同时转换，状态冲突。</td><td>将options通过参数传递到renderElement等底层函数，避免全局状态。</td></tr>
+<tr><td class="id">168</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">203-218</td><td><b>URL patterns硬编码在两个地方</b>：content.js的parseDocUrl和popup.js的parsePastedUrl有两份相同patterns，修改需同步两处。</td><td>抽取到共享模块或通过message共享。</td></tr>
+<tr><td class="id">169</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">488-538</td><td><b>Markdown→HTML转换难以单独测试</b>：内嵌在exportDocx中，无法独立测试转换逻辑。</td><td>提取为独立的markdownToHtml()函数。</td></tr>
+<tr><td class="id">170</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无CI/CD配置</b>：无lint、测试、打包自动化。</td><td>添加GitHub Actions: lint→test→build。</td></tr>
+<tr><td class="id">171</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无代码格式化配置</b>：无.prettierrc或.editorconfig，缩进混用2/4空格。</td><td>添加.editorconfig和Prettier配置。</td></tr>
+<tr><td class="id">172</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">14</td><td><b>全局状态_convertOpts缺少重置</b>：每次convertDoc调用前设置_convertOpts，但转换完成/失败后未重置为空，可能影响后续操作。</td><td>finally中重置_convertOpts={}。</td></tr>
+<tr><td class="id">173</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">639-677</td><td><b>history管理逻辑与UI渲染耦合</b>：saveToHistory既更新存储又影响后续渲染逻辑，难以单独测试存储层。</td><td>分离HistoryService(纯存储)和HistoryUI(渲染)。</td></tr>
+<tr><td class="id">174</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无调试/诊断模式</b>：debug选项仅标记但无实际作用。应添加性能计时、API响应日志。</td><td>让options.debug真正生效：打印各阶段耗时、API响应摘要。</td></tr>
+<tr><td class="id">175</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无错误上报</b>：转换失败的原因无法追踪，只能依赖用户反馈。</td><td>使用chrome.runtime.sendMessage或analytics上报错误。</td></tr>
+<tr><td class="id">176</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">15-19</td><td><b>全局状态变量无类型注释</b>：currentMarkdown等状态变量无类型说明，新开发者难以理解。</td><td>添加JSDoc @type注释。</td></tr>
+<tr><td class="id">177</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">1-8</td><td><b>版本号散布在文件头部注释</b>：更新版本需手动修改3个文件头部+manifest.json，容易遗漏。</td><td>使用构建工具或单一版本常量。</td></tr>
+<tr><td class="id">178</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">872</td><td><b>storage key命名无命名空间</b>：lastMarkdown/lastTitle等key可能与其他扩展冲突。</td><td>添加前缀 feishu_conv_。</td></tr>
+<tr><td class="id">179</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">background.js</td><td class="loc">11-12</td><td><b>STORAGE_KEY和TASK_TTL_MS硬编码</b>：无配置系统，修改需改代码。</td><td>可保留硬编码（扩展规模小），但至少提取到config对象。</td></tr>
+<tr><td class="id">180</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">696-754</td><td><b>分页参数硬编码</b>：mode=7/limit=239/maxPages=20等魔法数字无注释。</td><td>提取为命名常量: PAGE_SIZE/LIMIT/MAX_PAGES。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 9 ==================== -->
+<div class="layer-section" id="L9">
+<div class="layer-title">📋 第9层：MV3 合规 / Chrome 标准 — 15项</div>
+<div class="layer-desc">Chrome扩展Manifest V3规范、Chrome Web Store审核要求。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">181</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>缺失minimum_chrome_version</b>：未声明最低Chrome版本要求，MV3需要Chrome 88+。</td><td>添加"minimum_chrome_version":"88"。</td></tr>
+<tr><td class="id">182</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>缺少web_accessible_resources声明</b>：虽然当前有jszip.min.js，但Chrome Web Store可能要求更严格的WAR配置。</td><td>确认jszip.min.js确需WAR（content script不直接使用），否则移除WAR。</td></tr>
+<tr><td class="id">183</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>background.service_worker无type声明</b>：MV3支持ES模块SW，当前用Classic script。建议迁移到ES模块。</td><td>添加"type":"module"并使用import/export。</td></tr>
+<tr><td class="id">184</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">popup.js</td><td class="loc">832-841</td><td><b>pagehide替代unload不完全兼容</b>：pagehide在iOS Safari和某些Chrome版本中行为不一致。更可靠的方案是在状态变更时实时保存。</td><td>在currentMarkdown更新时立即持久化到storage。</td></tr>
+<tr><td class="id">185</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>缺少action.default_icon尺寸完整</b>：有16/48/128但Chrome推荐还包括32px。</td><td>添加32px icon。</td></tr>
+<tr><td class="id">186</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>缺少version_name</b>：Chrome Web Store推荐添加human-readable版本名。</td><td>添加"version_name":"2.7"。</td></tr>
+<tr><td class="id">187</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>缺少author/homepage_url</b>：扩展的归属信息和项目主页未声明。</td><td>添加author和homepage_url字段。</td></tr>
+<tr><td class="id">188</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>未使用chrome.action API</b>：MV3中pageAction/browserAction合并为action API，当前使用manifest中action配置但JS中未使用。</td><td>可选：使用chrome.action.setBadge显示转换状态。</td></tr>
+<tr><td class="id">189</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>未使用Offscreen Documents</b>：对于长时间运行的DOM操作（如DOCX生成），应使用offscreen document而非在popup中执行。</td><td>将DOCX/ZIP生成移至offscreen document。</td></tr>
+<tr><td class="id">190</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">background.js</td><td class="loc">1</td><td><b>SW无module type</b>：使用Classic script而MV3推荐ES Module。</td><td>manifest中设置type:module。</td></tr>
+<tr><td class="id">191</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">-</td><td><b>innerHTML使用频繁</b>：Chrome Web Store审核可能将innerHTML视为潜在XSS风险。</td><td>使用textContent或safe DOM API。</td></tr>
+<tr><td class="id">192</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无隐私政策声明</b>：若扩展收集任何数据（如URL、文档内容），CWS要求隐私政策。</td><td>评估是否需要隐私政策。</td></tr>
+<tr><td class="id">193</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>permissions中storage未说明用途</b>：CWS审核要求说明每个权限的用途。</td><td>在CWS提交时提供permissions justification。</td></tr>
+<tr><td class="id">194</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">manifest.json</td><td class="loc">-</td><td><b>host_permissions过多</b>：<code>https://*.feishu.cn/*</code>和<code>https://*.larksuite.com/*</code>覆盖飞书全部子域名。CWS可能要求缩小。</td><td>精确到文档路径。</td></tr>
+<tr><td class="id">195</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">-</td><td><b>无lang属性完整</b>：html lang="zh-CN"已存在，但对a11y工具可能需要更精确的声明。</td><td>检查lang属性是否需要添加hreflang。</td></tr>
+</tbody></table>
+</div>
+
+<!-- ==================== LAYER 10 ==================== -->
+<div class="layer-section" id="L10">
+<div class="layer-title">🏗️ 第10层：架构 / 设计 — 10项</div>
+<div class="layer-desc">整体架构设计模式、模块边界、状态管理策略。</div>
+<table class="issue-table">
+<thead><tr><th>#</th><th>严重度</th><th>文件</th><th>行号</th><th>问题描述</th><th>修复建议</th></tr></thead>
+<tbody>
+<tr><td class="id">196</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>三文件耦合度高</b>：content.js重-2000行全功能于一身；popup.js处理UI+状态+历史+导出；background.js职责模糊。无清晰的模块边界。</td><td>重构为: content-converter(纯转换引擎)、content-ui(按钮注入)、popup-controller(UI状态机)、storage-service(持久化)、export-engine(导出)。</td></tr>
+<tr><td class="id">197</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>消息协议无类型定义</b>：content/popup/background之间通过{action, ...args}通信，无接口定义或schema验证。</td><td>定义IPCMessage接口和消息type enum。</td></tr>
+<tr><td class="id">198</td><td class="sev"><span class="badge badge-major">P1</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>状态管理混乱</b>：状态分散在popup局部变量、background storage、localStorage、chrome.storage.local四层。无单一真相源。</td><td>统一使用chrome.storage.local作为唯一状态存储。</td></tr>
+<tr><td class="id">199</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>无依赖注入/控制反转</b>：所有依赖硬编码（如fetch、chrome API），难以mock测试。</td><td>采用依赖注入模式或至少暴露出可替换的接口。</td></tr>
+<tr><td class="id">200</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">268-614</td><td><b>BlockParser单体对象设计</b>：26种block类型全在一个对象中，无扩展点。新增block类型需直接修改BlockParser对象。</td><td>改为注册式：<code>BlockParser.register('new_type', handler)</code>，支持插件化扩展。</td></tr>
+<tr><td class="id">201</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">672-816</td><td><b>convertDoc()函数过长</b>：144行单函数处理分页、去重、跨页引用、Markdown构建、后处理。单一职责原则违反。</td><td>拆分为: fetchAllPages()、resolveReferences()、buildMarkdown()。</td></tr>
+<tr><td class="id">202</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.js</td><td class="loc">480-593</td><td><b>exportDocx()职责过多</b>：包含HTML转义、MD→HTML转换、CSS模板、下载——应分解为converter→renderer→downloader。</td><td>拆分为toHtml()、wrapTemplate()、triggerDownload()。</td></tr>
+<tr><td class="id">203</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">ALL</td><td class="loc">-</td><td><b>未使用Design Pattern</b>：无Command、Observer、Strategy等设计模式，所有逻辑都是过程式。适合小项目但不利于扩展。</td><td>评估引入Strategy模式（不同导出格式）和Observer模式（状态变更通知UI）。</td></tr>
+<tr><td class="id">204</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">content.js</td><td class="loc">11</td><td><b>模块系统缺失</b>：使用IIFE而非ES模块(import/export)，无法tree-shaking和按需加载。</td><td>迁移到ES模块，Chrome MV3已完全支持。</td></tr>
+<tr><td class="id">205</td><td class="sev"><span class="badge badge-minor">P2</span></td><td class="file">popup.html</td><td class="loc">192-193</td><td><b>script标签顺序依赖</b>：popup.js依赖jszip.min.js先加载（全局JSZip变量）。如果加载顺序改变则崩溃。</td><td>使用defer/async或动态导入jszip: <code>import('jszip.min.js')</code>。</td></tr>
+</tbody></table>
+</div>
+
+<!-- FOOTER -->
+<div style="background:white;border-radius:8px;padding:20px;margin-top:32px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+<h2 style="font-size:16px;margin-bottom:16px">📊 按文件分布统计</h2>
+<table class="file-stats" style="margin:0">
+<thead><tr><th>文件</th><th>行数</th><th>P0</th><th>P1</th><th>P2</th><th>合计</th><th>密度(行/问题)</th></tr></thead>
+<tbody>
+<tr><td class="fname">content.js</td><td>962</td><td>5</td><td>17</td><td>58</td><td>80</td><td>12.0</td></tr>
+<tr><td class="fname">popup.js</td><td>843</td><td>1</td><td>13</td><td>56</td><td>70</td><td>12.0</td></tr>
+<tr><td class="fname">background.js</td><td>195</td><td>0</td><td>3</td><td>7</td><td>10</td><td>19.5</td></tr>
+<tr><td class="fname">popup.html</td><td>195</td><td>0</td><td>0</td><td>7</td><td>7</td><td>27.9</td></tr>
+<tr><td class="fname">manifest.json</td><td>-</td><td>0</td><td>3</td><td>5</td><td>8</td><td>-</td></tr>
+<tr style="background:#f0f4ff;font-weight:700"><td class="fname">总计</td><td>2,195</td><td>6</td><td>36</td><td>133</td><td>175 (30跨文件=205)</td><td>12.5</td></tr>
+</tbody></table>
+</div>
+
+<div style="background:white;border-radius:8px;padding:20px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+<h2 style="font-size:16px;margin-bottom:12px">🔑 优先修复建议 (Top 10)</h2>
+<ol style="font-size:13px;line-height:2;padding-left:20px">
+<li><span class="badge badge-critical">P0 #1</span> <b>page截断误判</b> — 所有≥maxPages的文档都错误报告截断</li>
+<li><span class="badge badge-critical">P0 #2</span> <b>文字颜色剥离bug</b> — 背景色被误标为文字颜色</li>
+<li><span class="badge badge-critical">P0 #5</span> <b>标题XSS</b> — innerHTML直接拼接API数据</li>
+<li><span class="badge badge-critical">P0 #101</span> <b>下载文件名XSS</b> — result.title直接用于download属性</li>
+<li><span class="badge badge-major">P1 #4</span> <b>task.assignees类型崩溃</b> — 非数组assignees导致转换中断</li>
+<li><span class="badge badge-major">P1 #19</span> <b>background未验证tabId</b> — 已关闭tab的转换静默失败</li>
+<li><span class="badge badge-major">P1 #30</span> <b>无限递归</b> — 循环引用block可致栈溢出</li>
+<li><span class="badge badge-major">P1 #32</span> <b>ZIP OOM</b> — 大图片无限制下载可崩popup</li>
+<li><span class="badge badge-major">P1 #73</span> <b>heading代码重复</b> — 6个完全相同函数可合并</li>
+<li><span class="badge badge-major">P1 #161</span> <b>零测试覆盖</b> — 2000行代码无任何测试</li>
+</ol>
+</div>
+
+<div style="text-align:center;color:#888;font-size:12px;margin-top:24px">
+飞书文档转换器 v2.8 10层深度审查报告 · 2026-05-25 · WorkBuddy AI 生成 · 205项问题
+</div>
+
+</div>
+</body>
+</html>

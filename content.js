@@ -1,10 +1,8 @@
 // ============================================================
-// 飞书文档转换器 - Content Script (v2.6)
+// 飞书文档转换器 - Content Script (v2.8)
 // 功能：富文本渲染、多路径API、跨页引用解析、全块类型支持
-// 修复：h5/h6支持、代码语言别名、callout空格、quote多行、有序列表边界、DOCX列表、预览扩容
-// v2.4 新增：文字颜色/背景色支持、table单元格去双重解析、LANG_ALIAS提升至模块级、无效跨页引用循环优化
-// v2.5 新增：grid/gallery空容器过滤、link_card无url回退、todo空文checkbox保留、image无src含alt、grid counter隔离
-// v2.6 新增：ordered start编号支持、page超限截断告警、死代码清理
+// v2.4-2.7 修复历史见 CHANGELOG
+// v2.8 新增：P0×7修复(页截断误判/颜色剥离/XSS/语言路径/assignees类型)、API超时+非JSON保护、无限递归path检测、LANG_ALIAS 50+语言、颜色映射补全、inlineCode+粗体组合
 // ============================================================
 
 (function () {
@@ -20,6 +18,18 @@
     'shell': 'bash', 'sh': 'bash', 'zsh': 'bash',
     'c++': 'cpp', 'c#': 'csharp', 'objective-c': 'objc',
     'xml': 'xml', 'yml': 'yaml', 'markdown': 'md',
+    'java': 'java', 'kotlin': 'kt', 'swift': 'swift',
+    'rust': 'rust', 'php': 'php', 'html': 'html',
+    'css': 'css', 'sql': 'sql', 'ruby': 'ruby',
+    'dart': 'dart', 'lua': 'lua', 'scala': 'scala',
+    'r': 'r', 'perl': 'perl', 'groovy': 'groovy',
+    'powershell': 'powershell', 'dockerfile': 'dockerfile',
+    'makefile': 'makefile', 'graphql': 'graphql',
+    'json': 'json', 'diff': 'diff', 'nginx': 'nginx',
+    'cmake': 'cmake', 'less': 'less', 'scss': 'scss',
+    'toml': 'toml', 'ini': 'ini', 'tex': 'latex',
+    'matlab': 'matlab', 'vb': 'vbnet', 'batch': 'batch',
+    'elixir': 'elixir', 'haskell': 'haskell', 'clojure': 'clojure',
   };
 
   // ---- 颜色 ID 映射表（飞书颜色 → CSS 颜色名，用于 Markdown 背景高亮标注） ----
@@ -28,11 +38,14 @@
     'red': '🔴', 'orange': '🟠', 'yellow': '🟡',
     'green': '🟢', 'blue': '🔵', 'purple': '🟣',
     'grey': '⬜', 'gray': '⬜',
+    'cyan': '🩵', 'teal': '🩵', 'brown': '🟤', 'pink': '🩷',
     // 背景高亮（飞书返回形如 "red_bg" / "background_red"）
     'red_bg': '[红色高亮]', 'orange_bg': '[橙色高亮]',
     'yellow_bg': '[黄色高亮]', 'green_bg': '[绿色高亮]',
     'blue_bg': '[蓝色高亮]', 'purple_bg': '[紫色高亮]',
     'grey_bg': '[灰色高亮]', 'gray_bg': '[灰色高亮]',
+    'cyan_bg': '[青色高亮]', 'teal_bg': '[青色高亮]',
+    'brown_bg': '[棕色高亮]', 'pink_bg': '[粉色高亮]',
   };
 
   // ---- 富文本渲染引擎 ----
@@ -78,9 +91,17 @@
           text = `[${text}](${style.link.url})`;
         }
 
-        // 行内代码
+        // 行内代码（Markdown 不支持反引号内嵌粗体/斜体，使用 HTML 保留格式）
         if (style.inlineCode) {
-          text = `\`${text}\``;
+          if (style.bold && style.italic) {
+            text = `<code><em><strong>${text}</strong></em></code>`;
+          } else if (style.bold) {
+            text = `<code><strong>${text}</strong></code>`;
+          } else if (style.italic) {
+            text = `<code><em>${text}</em></code>`;
+          } else {
+            text = `\`${text}\``;
+          }
         }
         // 粗体+斜体组合（Markdown: ***text***）
         else if (style.bold && style.italic) {
@@ -106,7 +127,9 @@
 
         // 文字颜色（非默认颜色时添加 emoji 标注）
         // 飞书字段：style.foreColor / style.textColor / style.color（不同版本 API 字段名不一致）
-        const fgColor = (style.foreColor || style.textColor || style.color || '').toLowerCase().replace(/^background_/, '').replace(/ /g, '_');
+        // ⚠️ 不剥离 background_ 前缀：若飞书错将背景色值写入文字颜色字段，不应误标为文字颜色
+        const rawFg = (style.foreColor || style.textColor || style.color || '').toLowerCase();
+        const fgColor = rawFg.startsWith('background_') ? '' : rawFg.replace(/ /g, '_');
         if (fgColor && fgColor !== 'default' && fgColor !== 'black' && FEISHU_COLORS[fgColor]) {
           text = `${FEISHU_COLORS[fgColor]} ${text}`;
         }
@@ -124,9 +147,9 @@
 
       // @文档
       case 'mentionDoc': {
-        const title = el.mentionDoc?.title || el.title || '文档';
-        const url = el.mentionDoc?.url || el.url || '';
-        return url ? `[📄 ${title}](${url})` : `📄 ${title}`;
+        const title = el.mentionDoc?.title || '文档';
+        const url = el.mentionDoc?.url || '';
+        return url ? `[📄 ${title}](${url})` : `📄 ${title}（无可用链接）`;
       }
 
       // @用户
@@ -317,7 +340,7 @@
     code(block) {
       const code = getPlainText(block.data) || '';
       // 语言别名标准化（使用模块级常量 LANG_ALIAS）
-      const langRaw = (block.data?.code?.style?.language || '').toLowerCase();
+      const langRaw = (block.data?.code?.style?.language || block.data?.code?.language || block.data?.style?.language || '').toLowerCase();
       const lang = LANG_ALIAS[langRaw] || langRaw;
       if (!code.trim()) return '';
       return `\n\`\`\`${lang}\n${code}\n\`\`\`\n`;
@@ -514,7 +537,8 @@
     // --- 任务 ---
     task(block) {
       const t = renderRichText(block.data) || '任务';
-      const assignees = (block.data?.task?.assignees || []).map(a => a.name).join(', ');
+      const rawAssignees = block.data?.task?.assignees;
+      const assignees = Array.isArray(rawAssignees) ? rawAssignees.map(a => a && a.name || '').filter(Boolean).join(', ') : '';
       const dueDate = block.data?.task?.due_date || '';
       const status = block.data?.task?.status || '';
       let extra = [];
@@ -618,9 +642,13 @@
    * 处理单个 block，递归处理子节点。
    * prevSiblingType: 前一个兄弟 block 的类型，用于检测有序列表边界。
    */
-  function processBlock(blockId, blockMap, options, imageUrls, depth = 0, counter = {}, prevSiblingType = null) {
+  function processBlock(blockId, blockMap, options, imageUrls, depth = 0, counter = {}, prevSiblingType = null, path = new Set()) {
     const block = blockMap[blockId];
     if (!block) return '';
+
+    // 循环引用检测：当前 block 已在递归路径中 → 跳过防止栈溢出
+    if (path.has(blockId)) return '';
+    path.add(blockId);
 
     const type = block.data?.type || 'text';
 
@@ -644,11 +672,12 @@
       for (const childId of children) {
         const childBlock = blockMap[childId];
         const childType = childBlock?.data?.type || 'text';
-        result += processBlock(childId, blockMap, options, imageUrls, depth + 1, counter, childPrevType);
+        result += processBlock(childId, blockMap, options, imageUrls, depth + 1, counter, childPrevType, path);
         childPrevType = childType;
       }
     }
 
+    path.delete(blockId);
     return result;
   }
 
@@ -666,6 +695,21 @@
       }
     }
     return unresolved;
+  }
+
+  /**
+   * 安全文件名清洗：移除路径穿越字符、控制字符、HTML敏感字符
+   * 保留：中英文、数字、空格、常用标点（.,-_()[]）
+   */
+  function sanitizeFilename(name) {
+    if (!name) return '';
+    return name
+      .replace(/[\\/:*?"<>|]/g, '_')   // 文件系统非法字符
+      .replace(/[\x00-\x1f\x7f]/g, '') // 控制字符
+      .replace(/\.\./g, '_')           // 路径穿越
+      .replace(/^\.+/, '_')            // 开头点号（隐藏文件）
+      .trim()
+      .substring(0, 200);              // 最大长度限制
   }
 
   async function convertDoc(options) {
@@ -699,7 +743,21 @@
       url.searchParams.set('limit', '239');
       if (cursor) url.searchParams.set('cursor', cursor);
 
-      const resp = await fetch(url, { credentials: 'include' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s 超时
+
+      let resp;
+      try {
+        resp = await fetch(url, { credentials: 'include', signal: controller.signal });
+      } catch (e) {
+        clearTimeout(timeoutId);
+        if (e.name === 'AbortError') {
+          throw new Error(`API 请求超时 (30s)：网络过慢或飞书服务无响应`);
+        }
+        throw e;
+      }
+      clearTimeout(timeoutId);
+
       if (!resp.ok) {
         if (resp.status === 401 || resp.status === 403) {
           throw new Error(`API 认证失败 (${resp.status})：请确认已登录飞书并有权限访问此文档`);
@@ -710,9 +768,21 @@
         throw new Error(`API 请求失败 (${resp.status}): ${resp.statusText}`);
       }
 
-      const json = await resp.json();
+      // 检查 Content-Type 防止非 JSON 响应拖垮解析
+      const contentType = resp.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        const preview = await resp.text().catch(() => '');
+        throw new Error(`API 返回非 JSON 响应 (Content-Type: ${contentType || 'unknown'})，预览: ${preview.substring(0, 200)}`);
+      }
 
-      if (json.code !== 0 && json.code !== undefined) {
+      let json;
+      try {
+        json = await resp.json();
+      } catch (e) {
+        throw new Error(`API 响应 JSON 解析失败: ${e.message}`);
+      }
+
+      if (json.code !== undefined && json.code !== null && json.code !== 0) {
         throw new Error(`飞书 API 错误 (code=${json.code}): ${json.msg || '未知错误'}`);
       }
 
@@ -744,17 +814,18 @@
 
       if (!hasMore || !nextCursor) break;
 
+      // 超限截断检测：当前已处理完 maxPages 页，但还有下一页 → 标记截断
+      if (pageNum >= maxPages) {
+        truncated = true;
+        break;
+      }
+
       cursor = nextCursor;
       pageNum++;
 
       // 每次请求间隔 200ms 防止触发飞书 API 速率限制
       // 最大 20 页 = 最多额外 4 秒延迟，对用户体验影响极小
       await new Promise(r => setTimeout(r, 200));
-    }
-
-    // 超限截断标记
-    if (pageNum > maxPages) {
-      truncated = true;
     }
 
     // ---- 跨页引用解析：扫描未解析的子 Block ----
@@ -801,7 +872,7 @@
     markdown = markdown.trim();
 
     if (!firstTitle) {
-      firstTitle = document.title?.replace(/[\\/:*?"<>|]/g, '_') || 'untitled';
+      firstTitle = sanitizeFilename(document.title) || 'untitled';
     }
 
     return {
@@ -872,23 +943,32 @@
           debug: false,
         });
 
+        const safeTitle = sanitizeFilename(result.title) || 'untitled';
         const blob = new Blob([result.markdown], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${result.title}.md`;
+        a.download = `${safeTitle}.md`;
         a.click();
         URL.revokeObjectURL(url);
 
         statusEl.style.color = '#2E7D32';
-        statusEl.innerHTML = `✅ 转换完成！<br>
-          标题: ${result.title}<br>
-          页数: ${result.pages}${result.truncated ? ' (已达上限)' : ''}<br>
-          大小: ${(result.markdown.length / 1024).toFixed(1)} KB<br>
-          图片: ${result.imageUrls.length} 张`;
+        // 使用 textContent 避免 XSS（API 返回的 title 可能含恶意字符）
+        const statusLines = [
+          `✅ 转换完成！`,
+          `标题: ${result.title}`,
+          `页数: ${result.pages}${result.truncated ? ' (已达上限)' : ''}`,
+          `大小: ${(result.markdown.length / 1024).toFixed(1)} KB`,
+          `图片: ${result.imageUrls.length} 张`,
+        ];
         if (result.unresolvedRefs > 0) {
-          statusEl.innerHTML += `<br>⚠ 跨页引用: ${result.unresolvedRefs} 处`;
+          statusLines.push(`⚠ 跨页引用: ${result.unresolvedRefs} 处`);
         }
+        while (statusEl.firstChild) statusEl.removeChild(statusEl.firstChild);
+        statusLines.forEach((line, i) => {
+          if (i > 0) statusEl.appendChild(document.createElement('br'));
+          statusEl.appendChild(document.createTextNode(line));
+        });
 
         btn.textContent = '📄 再次转换';
       } catch (err) {
