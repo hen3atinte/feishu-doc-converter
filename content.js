@@ -205,7 +205,7 @@
    */
   function getPlainText(blockData) {
     const iat = blockData?.initialAttributedTexts;
-    if (!iat) return '';
+    if (!iat || !Array.isArray(iat)) return '';
     return iat.map(s => {
       if (!s.elements || s.elements.length === 0) return s.text || '';
       return s.elements.map(el => {

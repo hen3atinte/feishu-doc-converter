@@ -270,7 +270,7 @@
     if (pollTimer) clearTimeout(pollTimer);
     if (pollingActive) {
       console.warn('[飞书转换器] 轮询已在进行中，跳过重复调用');
-      return;
+      throw new Error('轮询已在进行中');
     }
     pollingActive = true;
 
@@ -360,23 +360,15 @@
   function downloadMarkdown() {
     if (!currentMarkdown) return;
     const filename = `${sanitizeFilename(currentTitle)}.md`;
-    chrome.runtime.sendMessage({
-      action: 'download_file',
-      filename,
-      content: currentMarkdown,
-      mimeType: 'text/markdown',
-    }).catch(() => {
-      // 回退：popup 内下载
-      showStatus('ℹ Background 下载不可用，使用浏览器直接下载', 'info');
-      const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      setTimeout(() => showStatus('✅ Markdown 已下载', 'success'), 500);
-    });
+    // 直接使用浏览器下载（SW 环境中无法可靠创建 Blob URL）
+    const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    showStatus('✅ Markdown 已下载', 'success');
   }
 
   // ---- 图片下载 + ZIP 打包 ----
@@ -883,7 +875,7 @@ ${html}
         console.warn('[飞书转换器] pagehide 保存失败:', e?.message || e);
       });
     }
-    if (pollTimer) clearInterval(pollTimer);
+    if (pollTimer) clearTimeout(pollTimer);
   });
 
 })();

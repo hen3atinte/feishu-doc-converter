@@ -124,15 +124,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  if (request.action === 'download') {
-    chrome.downloads.download({
-      url: request.url,
-      filename: request.filename,
-      saveAs: true,
-    }).catch(() => {
-      // 下载失败：由 popup 回退处理
-    });
-    return false;
+  if (request.action === 'list_active_tasks') {
+    (async () => {
+      const tasks = await getTasks();
+      const active = Object.values(tasks).filter(t => t.status === 'running');
+      sendResponse({ tasks: active });
+    })();
+    return true;
   }
 });
 
