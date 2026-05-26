@@ -1,4 +1,5 @@
-// 飞书文档转换器 - Background Service Worker (v2.12)
+// 飞书文档转换器 - Background Service Worker (v2.13)
+// v2.13 batch8: 无变更（本次修复集中在 content.js 和 popup.js）
 // v2.9 新增：start_conversion 超时保护(60s Promise.race)、getTasks/saveTasks 错误降级
 
 const STORAGE_KEY = 'conversion_tasks';
