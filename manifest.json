@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "飞书文档转换器",
-  "version": "2.10",
-  "description": "飞书文档转Markdown — v2.10 batch5: getPlainText的iat数组验证(P0)+list_active_tasks处理器(P1)+download简化为直下(P1)+pollingActive早期抛异常(P1)+clearInterval改clearTimeout(P2)",
+  "version": "2.12",
+  "description": "飞书文档转Markdown — v2.12 batch7: injectUI body空值保护(P0)+markdown空值检查(P1)+taskId缺失保护(P1)+withLock锁恢复(P2)+空markdown下载保护(P2) | 历史: v2.9-v2.11 累计60+修复",
   "permissions": ["activeTab", "storage", "downloads", "alarms"],
   "host_permissions": ["https://*.feishu.cn/*", "https://*.larksuite.com/*"],
   "background": {

@@ -1,5 +1,5 @@
 // ============================================================
-// 飞书文档转换器 - Popup Script (v2.9)
+// 飞书文档转换器 - Popup Script (v2.12)
 // 功能：Tab切换、URL粘贴导航、后台持久转换、XSS安全DOCX、ZIP下载、历史
 // v2.8 修复：list_active_tasks空指针保护（resp?.tasks?.length）
 // v2.9 URL安全：sanitizeUrl 协议白名单已覆盖所有导出路径
@@ -189,7 +189,7 @@
       showStatus('🔄 正在打开文档...', 'loading');
       await chrome.tabs.update(tab.id, { url: parsed.url });
 
-    // 等待页面加载完成
+      // 等待页面加载完成
       await new Promise((resolve, reject) => {
         let settled = false;
         const settle = (fn) => {
@@ -198,6 +198,13 @@
           chrome.tabs.onUpdated.removeListener(listener);
           fn();
         };
+
+        // 先检查当前标签页状态，避免页面已加载完成时监听器永不触发
+        chrome.tabs.get(tab.id, (currentTab) => {
+          if (currentTab?.status === 'complete') {
+            settle(resolve);
+          }
+        });
 
         const listener = (tabId, changeInfo) => {
           if (tabId === tab.id && changeInfo.status === 'complete') {
@@ -252,6 +259,9 @@
       });
 
       currentTaskId = resp.taskId;
+      if (!currentTaskId) {
+        throw new Error('后台任务创建失败（未返回任务ID），请重试');
+      }
       el.btnConvert.textContent = '⏳ 转换中...';
       showStatus('⏳ 正在转换（后台运行，可关闭此窗口）...', 'loading');
       setProgress(10, '已提交后台任务');
@@ -313,6 +323,24 @@
           failCount = 0; // 成功响应，重置失败计数
 
           if (resp.status === 'done') {
+            if (!resp.result) {
+              pollingActive = false;
+              showStatus('❌ 转换结果异常（后台未返回结果数据）', 'error');
+              el.btnConvert.textContent = '🔄 重试';
+              el.btnConvert.disabled = false;
+              hideProgress();
+              reject(new Error('后台未返回结果数据，请重试'));
+              return;
+            }
+            if (resp.result.markdown === undefined) {
+              pollingActive = false;
+              showStatus('❌ 转换结果异常（Markdown 内容为空）', 'error');
+              el.btnConvert.textContent = '🔄 重试';
+              el.btnConvert.disabled = false;
+              hideProgress();
+              reject(new Error('Markdown 内容为空，可能是文档无内容或权限不足'));
+              return;
+            }
             pollTimer = null;
             currentMarkdown = resp.result.markdown;
             currentTitle = resp.result.title;
@@ -515,6 +543,9 @@
   function exportDocx() {
     if (!currentMarkdown) return;
 
+    el.btnDocx.disabled = true;
+    el.btnDocx.textContent = '⏳ 导出中...';
+    try {
     // XSS 防护：对所有 Markdown 内容做 HTML 实体转义
     const safeMd = escapeHtml(currentMarkdown);
 
@@ -626,6 +657,12 @@ ${html}
     a.download = `${sanitizeFilename(currentTitle)}.doc`;
     a.click();
     URL.revokeObjectURL(url);
+    } catch (err) {
+      showStatus(`❌ DOCX 导出失败: ${err.message}`, 'error');
+    } finally {
+      el.btnDocx.textContent = '📄 导出 DOCX';
+      el.btnDocx.disabled = false;
+    }
   }
 
   // ---- 复制到剪贴板 ----
@@ -738,7 +775,7 @@ ${html}
     el.historyList.querySelectorAll('.h-del').forEach(del => {
       del.addEventListener('click', (e) => {
         e.stopPropagation();
-        const idx = parseInt(e.target.dataset.idx);
+        const idx = parseInt(del.dataset.idx);
         deleteHistory(idx);
       });
     });

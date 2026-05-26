@@ -1,4 +1,4 @@
-// 飞书文档转换器 - Background Service Worker
+// 飞书文档转换器 - Background Service Worker (v2.12)
 // v2.9 新增：start_conversion 超时保护(60s Promise.race)、getTasks/saveTasks 错误降级
 
 const STORAGE_KEY = 'conversion_tasks';
@@ -29,7 +29,10 @@ async function saveTasks(tasks) {
 // === 串行锁（防止 getTasks→modify→saveTasks 竞态） ===
 
 function withLock(fn) {
-  lockChain = lockChain.then(fn, fn);
+  lockChain = lockChain.then(fn, fn).catch((err) => {
+    // 锁链内部异常不应导致后续操作永久阻塞
+    console.warn('[飞书转换器] 锁操作异常，自动恢复:', err?.message || err);
+  });
   return lockChain;
 }
 
@@ -57,7 +60,8 @@ async function cleanupOldTasks() {
     const now = Date.now();
     let changed = false;
     for (const [id, task] of Object.entries(tasks)) {
-      if (now - task.updatedAt > TASK_TTL_MS) {
+      const isExpired = !task.updatedAt || (now - task.updatedAt > TASK_TTL_MS);
+      if (isExpired) {
         delete tasks[id];
         changed = true;
       }
@@ -97,9 +101,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           timeoutPromise,
         ]);
 
-        if (result && result.error) {
+        // result 为 undefined 时说明 content script 未加载或没有响应
+        if (!result || result.error) {
           task.status = 'error';
-          task.error = result.error;
+          task.error = result?.error || 'Content script 无响应（未安装或页面未加载完成）';
         } else {
           task.status = 'done';
           task.result = result;

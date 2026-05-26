@@ -1,5 +1,5 @@
 // ============================================================
-// 飞书文档转换器 - Content Script (v2.9)
+// 飞书文档转换器 - Content Script (v2.12)
 // 功能：富文本渲染、多路径API、跨页引用解析、全块类型支持
 // v2.4-2.8 修复历史见 CHANGELOG
 // v2.9 新增：URL全局清洗(sanitizeUrl, 阻止javascript:/data:等危险协议)、P0×5修复(代码块保护/depth 4→8/表格内联代码保护/getPlainText扩展/跨子树循环检测)、P1 URL安全(9个块类型统一清洗)、P0鲁棒性(消息超时/block上限/空数据检测/占位冲突)、iat数组验证/递归深度上限/空对象降级
@@ -397,7 +397,7 @@
                   parts.push(parsed.trim());
                 }
               }
-              inner = parts.filter(Boolean).join(' ');
+              inner = parts.filter(Boolean).join('<br>');
             } else {
               inner = renderRichText(cellBlock.data);
             }
@@ -874,6 +874,12 @@
   // ---- 注入到页面：按钮 + 浮窗 ----
   function injectUI() {
     if (document.getElementById('__fs_converter_btn')) return;
+    // 极少数页面（如飞书空白页）可能尚未构建 body，防崩溃
+    if (!document.body) {
+      console.warn('[飞书转换器] document.body 不可用，延迟注入');
+      setTimeout(injectUI, 500);
+      return;
+    }
 
     const container = document.createElement('div');
     container.id = '__fs_converter_btn';
@@ -930,6 +936,13 @@
         });
 
         const safeTitle = sanitizeFilename(result.title) || 'untitled';
+        if (!result.markdown || result.markdown.trim().length === 0) {
+          statusEl.style.color = '#E65100';
+          statusEl.textContent = '⚠ 文档内容为空（可能是空白文档或无读取权限）';
+          btn.textContent = '🔄 重试';
+          btn.disabled = false;
+          return;
+        }
         const blob = new Blob([result.markdown], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
